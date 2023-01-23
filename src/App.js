@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { HashRouter } from "react-router-dom";
 import { ethers } from 'ethers';
 import { PeerContext } from "@cerc-io/react-peer";
@@ -6,7 +6,7 @@ import logo from "./logo.svg";
 import "./installBuffer";
 import QueryParamsRoute from "./RoutableArea";
 import "./App.css";
-import { MOBYMASK_TOPIC } from "./constants";
+import { MESSAGE_TYPES, MOBYMASK_TOPIC } from "./constants";
 const { abi:PhisherRegistryABI } = require("./artifacts");
 
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
@@ -14,27 +14,62 @@ const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
 function App() {
   const peer = React.useContext(PeerContext);
 
-  React.useEffect(() => {
-    if (peer) {
-      const unsubscribe = peer.subscribeTopic(MOBYMASK_TOPIC, (peerId, message) => {
-        console.log("Received a message on mobymask P2P network from peer:", peerId.toString())
-        console.log("Signed invocations:")
-        console.log(JSON.stringify(message, null, 2))
+  const handleTopicMessage = useCallback((peerId, data) => {
+    console.log("Received a message on mobymask P2P network from peer:", peerId.toString());
+    const { type, message } = data;
+
+    switch (type) {
+      case MESSAGE_TYPES.INVOKE: {
+        console.log("Signed invocations:");
+        console.log(JSON.stringify(message, null, 2));
 
         const [{ invocations: { batch: invocationsList } }] = message;
         Array.from(invocationsList).forEach(invocation => {
-          const txData = invocation.transaction.data
-          const decoded = contractInterface.parseTransaction({ data: txData })
+          const txData = invocation.transaction.data;
+          const decoded = contractInterface.parseTransaction({ data: txData });
 
-          console.log(`method: ${decoded.name}, value: ${decoded.args[0]}`)
+          console.log(`method: ${decoded.name}, value: ${decoded.args[0]}`);
         });
 
-        console.log('------------------------------------------')
-      });
+        break;
+      }
+    
+      case MESSAGE_TYPES.REVOKE: {
+        const { signedDelegation, signedIntendedRevocation } = message;
+        console.log("Signed delegation:");
+        console.log(JSON.stringify(signedDelegation, null, 2));
+        console.log("Signed intention to revoke:");
+        const stringifiedSignedIntendedRevocation = JSON.stringify(
+          signedIntendedRevocation,
+          (key, value) => {
+            if (key === 'delegationHash' && value.type === 'Buffer') {
+              // Show hex value for delegationHash instead of Buffer
+              return ethers.utils.hexlify(Buffer.from(value));
+            }
 
-      return unsubscribe
+            return value;
+          },
+          2
+        )
+        console.log(stringifiedSignedIntendedRevocation);
+
+        break;
+      }
+
+      default:
+        break;
     }
-  }, [peer])
+
+    console.log('------------------------------------------')
+  }, []);
+
+  React.useEffect(() => {
+    if (peer) {
+      const unsubscribe = peer.subscribeTopic(MOBYMASK_TOPIC, handleTopicMessage);
+
+      return unsubscribe;
+    }
+  }, [peer, handleTopicMessage]);
 
   return (
     <div className="App">

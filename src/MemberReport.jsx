@@ -77,7 +77,7 @@ export default function (props) {
 }
 
 function SubmitBatchButton(props) {
-  const { provider, members, invitation, setMembers, p2p } = props;
+  const { provider, members, invitation, setMembers, p2p = false } = props;
   const peer = useContext(PeerContext);
   
   const reportMembersOptions = {

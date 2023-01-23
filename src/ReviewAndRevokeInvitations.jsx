@@ -1,8 +1,10 @@
 import { ethers } from "ethers";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { PeerContext } from "@cerc-io/react-peer";
 import createRegistry from "./createRegistry";
 import linkForInvitation from "./linkForInvitation";
 import copyInvitationLink from "./copyInvitationLink";
+import { MESSAGE_TYPES, MOBYMASK_TOPIC } from "./constants";
 
 const { generateUtil, createSignedDelegationHash } = require("eth-delegatable-utils");
 const { chainId, address, name } = require("./config.json");
@@ -15,17 +17,18 @@ const util = generateUtil({
 
 
 export default function (props) {
-  const { provider, invitations, invitation, setInvitations } = props;
-  const ethersProvider = new ethers.providers.Web3Provider(provider, "any");
-
+  const { provider, invitations, invitation, setInvitations, setRevokedP2PInvitations, revokedP2PInvitations = [], p2p = false } = props;
   const [registry, setRegistry] = useState(null);
-
+  const peer = useContext(PeerContext);
+  
   // Get registry
   useEffect(() => {
-    if (registry) {
+    if (registry || !provider) {
       return;
     }
-
+    
+    const ethersProvider = new ethers.providers.Web3Provider(provider, "any");
+  
     createRegistry(ethersProvider)
       .then(_registry => {
         setRegistry(_registry);
@@ -33,14 +36,16 @@ export default function (props) {
       .catch(console.error);
   });
 
-  if (!registry) {
+  if (!p2p && !registry) {
     return <p>Loading...</p>;
   }
 
   return (
     <details className="box">
-      <summary>Outstanding Invitations ({invitations.length})</summary>
-      {invitations.map((_invitation, index) => {
+      <summary>Outstanding Invitations ({invitations.length - revokedP2PInvitations.length}) {p2p && "in p2p network"}</summary>
+      {invitations
+        .filter((_invitation) => !revokedP2PInvitations.some(revokedInvitation => revokedInvitation.invitation.key === _invitation.invitation.key))
+        .map((_invitation, index) => {
         return (
           <div key={index}>
             <span>{_invitation.petName}</span>
@@ -62,16 +67,32 @@ export default function (props) {
                   delegationHash,
                 };
                 const signedIntendedRevocation = util.signRevocation(intendedRevocation, invitation.key);
+                
+                if (p2p && peer) {
+                  // Broadcast revocation on the network
+                  peer.floodMessage(
+                    MOBYMASK_TOPIC,
+                    {
+                      type: MESSAGE_TYPES.REVOKE,
+                      message: { signedDelegation, signedIntendedRevocation }
+                    }
+                  );
 
-                await registry.revokeDelegation(signedDelegation, signedIntendedRevocation);
-
-                const newInvites = [...invitations];
-                newInvites.splice(index, 1);
-                localStorage.setItem("outstandingInvitations", JSON.stringify(newInvites));
-                setInvitations(newInvites);
+                  setRevokedP2PInvitations((oldRevokedInvitations) => {
+                    const newRevokedInvitations = [...oldRevokedInvitations, _invitation];
+                    localStorage.setItem("revokedP2PInvitations", JSON.stringify(newRevokedInvitations));
+                    return newRevokedInvitations;
+                  });
+                } else {
+                  const newInvites = [...invitations];
+                  newInvites.splice(index, 1);
+                  await registry.revokeDelegation(signedDelegation, signedIntendedRevocation);
+                  localStorage.setItem("outstandingInvitations", JSON.stringify(newInvites));
+                  setInvitations(newInvites);
+                }
               }}
             >
-              Revoke
+              Revoke { p2p ? "(p2p network)" : "(blockchain)"}
             </button>
           </div>
         );

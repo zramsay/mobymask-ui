@@ -74,7 +74,7 @@ export default function (props) {
 }
 
 function SubmitBatchButton(props) {
-  const { provider, phishers, invitation, setPhishers, p2p } = props;
+  const { provider, phishers, invitation, setPhishers, p2p = false } = props;
   const peer = useContext(PeerContext);
   
   const reportPhishersOptions = {

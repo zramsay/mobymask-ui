@@ -24,6 +24,7 @@ export default function Members() {
 
   const [invitation, setInvitation] = useState(null); // Own invitation
   const [invitations, setInvitations] = useState([]); // Outbound invitations
+  const [revokedP2PInvitations, setRevokedP2PInvitations] = useState([]); // Revoked invitations in p2p network
   const navigate = useNavigate();
 
   // Load user's own invitation from disk or query string:
@@ -80,6 +81,8 @@ export default function Members() {
       const rawStorage = localStorage.getItem("outstandingInvitations");
       let loadedInvitations = JSON.parse(rawStorage) || [];
       setInvitations(loadedInvitations, [loaded]);
+      const loadedRevokedP2PInvitations = JSON.parse(localStorage.getItem("revokedP2PInvitations")) || [];
+      setRevokedP2PInvitations(loadedRevokedP2PInvitations);
       setLoaded(true);
     } catch (err) {
       console.error(err);
@@ -149,6 +152,14 @@ export default function Members() {
 
         <div className="inviteBox">
           {inviteView}
+
+          <ReviewAndRevokeInvitations
+            p2p
+            invitations={invitations}
+            invitation={invitation}
+            revokedP2PInvitations={revokedP2PInvitations}
+            setRevokedP2PInvitations={setRevokedP2PInvitations}
+          />
 
           <LazyConnect actionName="revoke outstanding invitations" chainId={chainId}>
             <ReviewAndRevokeInvitations
