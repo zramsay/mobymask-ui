@@ -4,7 +4,7 @@ import { PeerContext } from "@cerc-io/react-peer";
 import createRegistry from "./createRegistry";
 import linkForInvitation from "./linkForInvitation";
 import copyInvitationLink from "./copyInvitationLink";
-import { MESSAGE_TYPES, MOBYMASK_TOPIC } from "./constants";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./constants";
 
 const { generateUtil, createSignedDelegationHash } = require("eth-delegatable-utils");
 const { chainId, address, name } = require("./config.json");
@@ -70,10 +70,10 @@ export default function (props) {
                 
                 if (p2p && peer) {
                   // Broadcast revocation on the network
-                  peer.floodMessage(
+                  await peer.floodMessage(
                     MOBYMASK_TOPIC,
                     {
-                      type: MESSAGE_TYPES.REVOKE,
+                      kind: MESSAGE_KINDS.REVOKE,
                       message: { signedDelegation, signedIntendedRevocation }
                     }
                   );

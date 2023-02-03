@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import contractInfo from "./contractInfo";
-import { MESSAGE_TYPES, MOBYMASK_TOPIC } from "./constants";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./constants";
 const { createMembership } = require("eth-delegatable-utils");
 const { abi } = require("./artifacts");
 const { chainId, address, name } = require("./config.json");
@@ -47,16 +47,16 @@ export default async function reportMembers({ members, invitation, provider = nu
 
   if (peer) {
     // Broadcast invocations on the network
-    peer.floodMessage(
+    return peer.floodMessage(
       MOBYMASK_TOPIC,
       {
-        type: MESSAGE_TYPES.INVOKE,
+        kind: MESSAGE_KINDS.INVOKE,
         message: [signedInvocations]
       }
     );
-  } else {
-    return await registry.invoke([signedInvocations]);
   }
+
+  return registry.invoke([signedInvocations]);
 }
 
 async function attachRegistry(registry, signer) {

@@ -12,7 +12,7 @@ const client = new ApolloClient({
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <PeerProvider signalServer={process.env.REACT_APP_SIGNAL_SERVER} relayNode={process.env.REACT_APP_RELAY_NODE}>
+    <PeerProvider relayNode={process.env.REACT_APP_RELAY_NODE}>
       <App />
     </PeerProvider>
   </ApolloProvider>,

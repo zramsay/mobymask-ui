@@ -6,7 +6,7 @@ export const reportTypes = [
 
 export const MOBYMASK_TOPIC = 'mobymask';
 
-export const MESSAGE_TYPES = {
+export const MESSAGE_KINDS = {
   INVOKE: 'invoke',
   REVOKE: 'revoke'
 };

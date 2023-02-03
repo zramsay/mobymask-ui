@@ -6,7 +6,7 @@ import logo from "./logo.svg";
 import "./installBuffer";
 import QueryParamsRoute from "./RoutableArea";
 import "./App.css";
-import { MESSAGE_TYPES, MOBYMASK_TOPIC } from "./constants";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./constants";
 const { abi:PhisherRegistryABI } = require("./artifacts");
 
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
@@ -16,10 +16,10 @@ function App() {
 
   const handleTopicMessage = useCallback((peerId, data) => {
     console.log("Received a message on mobymask P2P network from peer:", peerId.toString());
-    const { type, message } = data;
+    const { kind, message } = data;
 
-    switch (type) {
-      case MESSAGE_TYPES.INVOKE: {
+    switch (kind) {
+      case MESSAGE_KINDS.INVOKE: {
         console.log("Signed invocations:");
         console.log(JSON.stringify(message, null, 2));
 
@@ -34,7 +34,7 @@ function App() {
         break;
       }
     
-      case MESSAGE_TYPES.REVOKE: {
+      case MESSAGE_KINDS.REVOKE: {
         const { signedDelegation, signedIntendedRevocation } = message;
         console.log("Signed delegation:");
         console.log(JSON.stringify(signedDelegation, null, 2));
