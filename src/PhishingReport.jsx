@@ -28,7 +28,7 @@ export default function (props) {
   }, []);
 
   return (
-    <div className="box">
+    <div className="box" data-ref="phishers.report">
       <h3>Report a phishing attempt</h3>
 
       <ReportInput onSubmit={(_phisher) => {
@@ -92,6 +92,7 @@ function SubmitBatchButton(props) {
   return (
     <div>
       <button
+        data-ref="phishers.submitBatch"
         onClick={async () => {
           try {
             const block = await reportPhishers(reportPhishersOptions);

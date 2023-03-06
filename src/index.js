@@ -4,6 +4,7 @@ import { PeerProvider } from "@cerc-io/react-peer";
 import ReactDOM from "react-dom";
 import App from "./App";
 import "./index.css";
+import config from "./config.json";
 
 const client = new ApolloClient({
   uri: process.env.REACT_APP_WATCHER_URI,
@@ -12,7 +13,7 @@ const client = new ApolloClient({
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <PeerProvider relayNode={process.env.REACT_APP_RELAY_NODE}>
+    <PeerProvider relayNodes={config.relayNodes ?? []} peerConfig={config.peer}>
       <App />
     </PeerProvider>
   </ApolloProvider>,

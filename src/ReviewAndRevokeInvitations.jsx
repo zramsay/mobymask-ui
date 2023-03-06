@@ -42,14 +42,14 @@ export default function (props) {
 
   return (
     <details className="box">
-      <summary>Outstanding Invitations ({invitations.length - revokedP2PInvitations.length}) {p2p && "in p2p network"}</summary>
+      <summary data-ref="member.invites.show">Outstanding Invitations ({invitations.length - revokedP2PInvitations.length}) {p2p && "in p2p network"}</summary>
       {invitations
         .filter((_invitation) => !revokedP2PInvitations.some(revokedInvitation => revokedInvitation.invitation.key === _invitation.invitation.key))
         .map((_invitation, index) => {
         return (
           <div key={index}>
             <span>{_invitation.petName}</span>
-            <input type="text" readOnly value={linkForInvitation(_invitation.invitation)}></input>
+            <input data-ref="member.invite.link" type="text" readOnly value={linkForInvitation(_invitation.invitation)}></input>
             <button
               onClick={() => {
                 copyInvitationLink(_invitation.invitation, _invitation.petName).catch(err => alert(err.message));
@@ -58,6 +58,7 @@ export default function (props) {
               Copy
             </button>
             <button
+              data-ref="member.invite.revoke"
               onClick={async () => {
                 const { signedDelegations } = _invitation.invitation;
                 const signedDelegation = signedDelegations[signedDelegations.length - 1];

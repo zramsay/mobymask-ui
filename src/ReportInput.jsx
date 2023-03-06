@@ -34,6 +34,7 @@ export default function ReportInput({ onSubmit }) {
         <label htmlFor="value">Value:</label>
         <input
           type="text"
+          data-ref="phishers.input"
           id="value"
           name="value"
           value={value}
@@ -41,7 +42,7 @@ export default function ReportInput({ onSubmit }) {
         />
       </div>
       <div>
-        <button type="submit">Submit</button>
+        <button data-ref="phishers.addBatch" type="submit">Submit</button>
       </div>
     </form>
   );

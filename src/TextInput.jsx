@@ -19,12 +19,14 @@ export default function TextInput(props) {
         onChange={event => {
           setValue(event.target.value);
         }}
+        data-ref="members.input"
       />
 
       <button
         onClick={() => {
           onComplete(value);
         }}
+        data-ref="members.addBatch"
       >
         {buttonLabel}
       </button>

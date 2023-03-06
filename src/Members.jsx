@@ -199,6 +199,7 @@ function generateInviteView(invitation, addInvitation) {
           If you invite an abusive person and don't revoke their activity quickly, you may have your membership revoked.
         </p>
         <button
+          data-ref="member.invite.create"
           onClick={() => {
             const petName = prompt(
               "Who is this invitation for (for your personal use only, so you can view their reports and revoke the invitation)?",
