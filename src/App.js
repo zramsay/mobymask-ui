@@ -9,6 +9,7 @@ import QueryParamsRoute from "./RoutableArea";
 import "./App.css";
 import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./constants";
 import DebugPanel from "./DebugPanel";
+import { getCurrentTime } from "./helpers/getCurrentTime";
 const { abi:PhisherRegistryABI } = require("./artifacts");
 
 const contractInterface = new ethers.utils.Interface(PhisherRegistryABI);
@@ -19,7 +20,7 @@ function App() {
 
   const handleTopicMessage = useCallback((peerId, data) => {
     const { kind, message } = data;
-    const messageLogs = [`Received a message on mobymask P2P network from peer: ${peerId.toString()} (${getPseudonymForPeerId(peerId.toString())})`];
+    const messageLogs = [`[${getCurrentTime()}] Received a message on mobymask P2P network from peer: ${peerId.toString()} (${getPseudonymForPeerId(peerId.toString())})`];
 
     switch (kind) {
       case MESSAGE_KINDS.INVOKE: {
