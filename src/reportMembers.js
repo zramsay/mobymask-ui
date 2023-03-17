@@ -13,7 +13,7 @@ export default async function reportMembers({ members, invitation, provider = nu
   });
 
   let registry = new ethers.Contract(address, abi);
-  
+
   if (provider) {
     const wallet = provider.getSigner();
     registry = await attachRegistry(registry, wallet);

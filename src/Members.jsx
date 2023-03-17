@@ -120,13 +120,7 @@ export default function Members() {
       <div className="controlBoard">
         <div className="phisherBox">
           <div className="box">
-            <LazyConnect
-              actionName="check if a user is a phisher"
-              chainId={chainId}
-              opts={{ needsAccountConnected: false }}
-            >
-              <PhisherCheckButton />
-            </LazyConnect>
+            <PhisherCheckButton />
           </div>
 
           <div className="box">
@@ -136,13 +130,7 @@ export default function Members() {
 
         <div className="memberBox">
           <div className="box">
-            <LazyConnect
-              actionName="check if a user is endorsed"
-              chainId={chainId}
-              opts={{ needsAccountConnected: false }}
-            >
-              <MemberCheckButton />
-            </LazyConnect>
+            <MemberCheckButton />
           </div>
 
           <div className="box">

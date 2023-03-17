@@ -20,15 +20,15 @@ export default function (props) {
   const { provider, invitations, invitation, setInvitations, setRevokedP2PInvitations, revokedP2PInvitations = [], p2p = false } = props;
   const [registry, setRegistry] = useState(null);
   const peer = useContext(PeerContext);
-  
+
   // Get registry
   useEffect(() => {
     if (registry || !provider) {
       return;
     }
-    
+
     const ethersProvider = new ethers.providers.Web3Provider(provider, "any");
-  
+
     createRegistry(ethersProvider)
       .then(_registry => {
         setRegistry(_registry);
@@ -68,8 +68,11 @@ export default function (props) {
                   delegationHash,
                 };
                 const signedIntendedRevocation = util.signRevocation(intendedRevocation, invitation.key);
-                
+
                 if (p2p && peer) {
+                  // Convert delegationHash from buffer to hex string before broadcasting as JSON on p2p network
+                  signedIntendedRevocation.intentionToRevoke.delegationHash = ethers.utils.hexlify(signedIntendedRevocation.intentionToRevoke.delegationHash)
+
                   // Broadcast revocation on the network
                   await peer.floodMessage(
                     MOBYMASK_TOPIC,
