@@ -1,4 +1,5 @@
 import React from "react";
+import throttle from 'lodash/throttle';
 
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
@@ -7,7 +8,6 @@ import Popper from '@mui/material/Popper';
 import Tab from '@mui/material/Tab';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CloseIcon from '@mui/icons-material/Close';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -15,6 +15,10 @@ import { Metrics, SelfInfo, Connections, PeersGraph, NetworkGraph } from "@cerc-
 
 import config from './config.json';
 import { SubscribedMessages } from "./components/SubscribedMessages";
+import { TabPanel } from './components/TabPanel';
+
+const RESIZE_THROTTLE_TIME = 500; // ms
+const TAB_HEADER_HEIGHT = 40;
 
 const STYLES = {
   debugFabStyle: {
@@ -51,12 +55,13 @@ const STYLES = {
     minHeight: 32
   },
   tabPanel: {
-    padding: 0
+    paddingTop: 1/2
   },
   selfInfo: {
     marginBottom: 1
   }
 }
+
 const theme = createTheme({
   components: {
     MuiTableCell: {
@@ -73,10 +78,26 @@ const theme = createTheme({
 export default function DebugPanel({ messages }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [value, setValue] = React.useState('1');
+  const [graphContainerHeight, setGraphContainerHeight] = React.useState((window.innerHeight / 2) - TAB_HEADER_HEIGHT)
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
   };
+
+  const throttledHandleWindowResize = React.useMemo(
+    () => throttle(() => {
+      setGraphContainerHeight((window.innerHeight / 2) - TAB_HEADER_HEIGHT)
+    }, RESIZE_THROTTLE_TIME),
+    []
+  );
+
+  React.useEffect(() => {
+    window.addEventListener('resize', throttledHandleWindowResize);
+
+    return () => {
+      window.removeEventListener('resize', throttledHandleWindowResize);
+    };
+  }, [throttledHandleWindowResize]);
 
   return (
     <ThemeProvider theme={theme}>
@@ -120,13 +141,13 @@ export default function DebugPanel({ messages }) {
               <Metrics />
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="3">
-              <PeersGraph />
+              <PeersGraph containerHeight={graphContainerHeight}/>
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="4">
               <SubscribedMessages messages={messages} />
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="5">
-              <NetworkGraph />
+              <NetworkGraph containerHeight={graphContainerHeight}/>
             </TabPanel>
           </TabContext>
         </Paper>
