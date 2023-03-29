@@ -1,6 +1,6 @@
 import React from "react";
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
-import { PeerProvider } from "@cerc-io/react-peer";
+import { PeerProvider, MultipleTabsChecker } from "@cerc-io/react-peer";
 import ReactDOM from "react-dom";
 import App from "./App";
 import "./index.css";
@@ -13,9 +13,11 @@ const client = new ApolloClient({
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <PeerProvider relayNodes={config.relayNodes ?? []} peerConfig={config.peer}>
-      <App />
-    </PeerProvider>
+    <MultipleTabsChecker>
+      <PeerProvider relayNodes={config.relayNodes ?? []} peerConfig={config.peer}>
+        <App />
+      </PeerProvider>
+    </MultipleTabsChecker>
   </ApolloProvider>,
   document.getElementById("root"),
 );
