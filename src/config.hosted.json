@@ -1,5 +1,6 @@
 {
   "address": "MOBYMASK_HOSTED_CONFIG_address",
+  "name": "MobyMask",
   "chainId": "MOBYMASK_HOSTED_CONFIG_chainId",
   "relayNodes": "MOBYMASK_HOSTED_CONFIG_relayNodes",
   "peer": {
