@@ -27,4 +27,4 @@ jobs:
       - name: npm publish
         # prepublishOnly script run before publish
         run: |
-          npm publish
+          CI=false npm publish
