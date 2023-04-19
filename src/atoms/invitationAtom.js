@@ -15,4 +15,7 @@ export const revokedInvitationsAtom = atomWithStorage(
   localStorage.getItem("revokedInvitations") || []
 );
 
-
+export const revokedP2PInvitationsAtom = atomWithStorage(
+  "revokedP2PInvitations",
+  localStorage.getItem("revokedP2PInvitations") || []
+);

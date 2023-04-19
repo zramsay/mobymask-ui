@@ -46,6 +46,9 @@ function ReportInputInfo(props) {
         return require(`../assets/ICON_TWT.png`);
       case "URL":
         return require(`../assets/ICON_URL.png`);
+      default:
+        console.error('Invalid type');
+        break;
     }
   };
 

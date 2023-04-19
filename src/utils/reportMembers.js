@@ -4,14 +4,23 @@ const { createMembership } = require("eth-delegatable-utils");
 const { abi } = require("./artifacts");
 const { address } = require("./config.json");
 
-export default async function reportMembers(members, provider, invitation) {
+export default async function reportMembers({
+  members,
+  provider,
+  invitation,
+  peer = null
+}) {
   const membership = createMembership({
     contractInfo,
     invitation,
   });
 
-  const wallet = provider.getSigner();
-  const registry = await attachRegistry(wallet);
+  let registry = new ethers.Contract(address, abi);
+
+  if (provider) {
+    const wallet = provider.getSigner();
+    registry = await attachRegistry(registry, wallet);
+  }
 
   const invocations = await Promise.all(
     members.map(async (member) => {
@@ -40,12 +49,24 @@ export default async function reportMembers(members, provider, invitation) {
     },
   });
 
-  return await registry.invoke([signedInvocations]);
+  if (peer) {
+    // Broadcast invocations on the network
+    return peer.floodMessage(
+      MOBYMASK_TOPIC,
+      {
+        kind: MESSAGE_KINDS.INVOKE,
+        message: [signedInvocations]
+      }
+    );
+  }
+
+  const block = await registry.invoke([signedInvocations]);
+  return block.wait();
 }
 
-async function attachRegistry(signer) {
-  const Registry = new ethers.Contract(address, abi, signer);
-  const _registry = await Registry.attach(address);
-  const deployed = await _registry.deployed();
+async function attachRegistry(registry, signer) {
+  registry = registry.attach(address);
+  registry = registry.connect(signer);
+  const deployed = await registry.deployed();
   return deployed;
 }

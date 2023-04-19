@@ -19,6 +19,6 @@ export default function useLazyQuery(query, options) {
           ...variables,
         },
       }),
-    [client],
+    [client, query, options],
   );
 }

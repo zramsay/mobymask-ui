@@ -27,6 +27,9 @@ export function sanitizeValue(type, value) {
       value = value.indexOf("0x") === 0 ? value : `0x${value}`;
       value = value.toLowerCase();
       break;
+    default:
+      console.error('Invalid type');
+      break;
   }
 
   return `${type}:${value}`;

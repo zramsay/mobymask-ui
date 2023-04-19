@@ -1,21 +1,17 @@
 import { ApolloClient, ApolloProvider, InMemoryCache } from "@apollo/client";
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { MultipleTabsChecker, PeerProvider } from "@cerc-io/react-peer";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { responsiveFontSizes } from "@mui/material";
 
 import { StyledEngineProvider } from "@mui/material/styles";
+import config from "./utils/config.json";
 import App from "./App";
 import "./index.css";
 
-const hostname = window.location.hostname;
-
-const watcherUri = ["localhost", "127.0.0.1"].includes(hostname)
-  ? "http://localhost:3001/graphql"
-  : "https://mobymask.vdb.to/graphql";
-
 const client = new ApolloClient({
-  uri: watcherUri,
+  uri: process.env.REACT_APP_WATCHER_URI,
   cache: new InMemoryCache(),
 });
 const theme = responsiveFontSizes(
@@ -51,7 +47,11 @@ root.render(
   <ApolloProvider client={client}>
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>
-        <App />
+        <MultipleTabsChecker>
+          <PeerProvider relayNodes={config.relayNodes ?? []} peerConfig={config.peer}>
+            <App />
+          </PeerProvider>
+        </MultipleTabsChecker>
       </ThemeProvider>
     </StyledEngineProvider>
   </ApolloProvider>,

@@ -244,6 +244,22 @@ function PendingReports() {
             />
           </Box>
         </Box>
+        <br/>
+        <Box textAlign="center">
+          <SubmitBatchButton
+            p2p
+            type={active}
+            subData={
+              active === "ReportPhisher" ? storedPhishers : storedNotPhishers
+            }
+            invitation={invitation}
+            setLocalData={
+              active === "ReportPhisher"
+                ? setStoredPhishers
+                : setStoredNotPhishers
+            }
+          />
+        </Box>
         <LazyConnect
           actionName="submit reports directly to the blockchain. Get a web3 compatible wallet(like metamask) to proceed"
           chainId={chainId}

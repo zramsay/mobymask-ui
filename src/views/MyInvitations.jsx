@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { PeerContext } from "@cerc-io/react-peer";
 import { Typography, Box } from "@mui/material";
 import { toast } from "react-hot-toast";
 import { ethers } from "ethers";
@@ -6,10 +7,13 @@ import { useAtom, useAtomValue } from "jotai";
 
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
+import LazyConnect from "./LazyConnect";
 import createRegistry from "../utils/createRegistry";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "../utils/constants";
 import {
   outstandingInvitationsAtom,
   revokedInvitationsAtom,
+  revokedP2PInvitationsAtom
 } from "../atoms/invitationAtom";
 import { invitationAtom } from "../atoms/invitationAtom";
 import { providerAtom } from "../atoms/providerAtom";
@@ -38,9 +42,33 @@ function MyInvitations() {
     revokedInvitationsAtom,
   );
 
+  const [revokedP2PInvitations, setRevokedP2PInvitations] = useAtom(
+    revokedP2PInvitationsAtom,
+  );
+
   const provider = useAtomValue(providerAtom);
 
   const invitation = useAtomValue(invitationAtom);
+
+  const getActionRenderHandler = (p2p = false) => (val, row, index) => {
+    return (
+      <>
+        <CopyToClipboard
+          text={row.invitationLink}
+          onCopy={() => toast.success("Copy successfully!")}
+        >
+          <Button borderRadius="100px" height="48px" label="Copy" />
+        </CopyToClipboard>
+        &nbsp;
+        <Button
+          borderRadius="100px"
+          height="48px"
+          label="Revoke"
+          onClick={() => revokeLink(row, index, p2p)}
+        />
+      </>
+    );
+  };
 
   const tableHeader = [
     {
@@ -55,44 +83,37 @@ function MyInvitations() {
     {
       key: "Action",
       title: "Action",
-      render: (val, row, index) => {
-        return (
-          <>
-            <CopyToClipboard
-              text={row.invitationLink}
-              onCopy={() => toast.success("Copy successfully!")}
-            >
-              <Button borderRadius="100px" height="48px" label="Copy" />
-            </CopyToClipboard>
-            &nbsp;
-            <Button
-              borderRadius="100px"
-              height="48px"
-              label="Revoke"
-              onClick={() => revokeLink(row, index)}
-            />
-          </>
-        );
-      },
+      render: getActionRenderHandler(false)
     },
   ];
 
-  const ethersProvider = new ethers.providers.Web3Provider(provider, "any");
+  const p2pTableHeader = [
+    ...tableHeader.slice(0, 2),
+    {
+      key: "Action",
+      title: "Action",
+      render: getActionRenderHandler(true)
+    }
+  ]
 
   const [registry, setRegistry] = useState(null);
+  const peer = useContext(PeerContext);
 
   useEffect(() => {
-    if (registry) {
+    if (registry || !provider) {
       return;
     }
+
+    const ethersProvider = new ethers.providers.Web3Provider(provider, "any");
+
     createRegistry(ethersProvider)
       .then((_registry) => {
         setRegistry(_registry);
       })
       .catch(console.error);
-  });
+  }, [registry, provider]);
 
-  const revokeLink = async (row, index) => {
+  const revokeLink = async (row, index, p2p) => {
     const loading = toast.loading("Waiting...");
     try {
       const { signedDelegations } = row.invitation;
@@ -107,15 +128,33 @@ function MyInvitations() {
         invitation.key,
       );
 
-      const result = await registry.revokeDelegation(
-        signedDelegation,
-        signedIntendedRevocation,
-      );
-      await result.wait();
       const newInvites = [...outstandingInvitations];
       const deleteInvites = newInvites.splice(index, 1);
-      setOutstandingInvitations(newInvites);
-      setRevokedInvitations([...revokedInvitations, ...deleteInvites]);
+
+      if (p2p && peer) {
+        // Convert delegationHash from buffer to hex string before broadcasting as JSON on p2p network
+        signedIntendedRevocation.intentionToRevoke.delegationHash = ethers.utils.hexlify(signedIntendedRevocation.intentionToRevoke.delegationHash)
+
+        // Broadcast revocation on the network
+        await peer.floodMessage(
+          MOBYMASK_TOPIC,
+          {
+            kind: MESSAGE_KINDS.REVOKE,
+            message: { signedDelegation, signedIntendedRevocation }
+          }
+        );
+
+        setRevokedP2PInvitations([...revokedP2PInvitations, ...deleteInvites]);
+      } else {
+        const result = await registry.revokeDelegation(
+          signedDelegation,
+          signedIntendedRevocation,
+        );
+        await result.wait();
+        setOutstandingInvitations(newInvites);
+        setRevokedInvitations([...revokedInvitations, ...deleteInvites]);
+      }
+
       toast.success("Revoke success!");
     } catch (err) {
       console.error(err);
@@ -144,20 +183,45 @@ function MyInvitations() {
         />
         <Button
           {...{
-            label: "Revoked invitations",
+            label: "Outstanding invitations (p2p network)",
             active: active === 2,
             marginX: "8px",
             onClick: () => setActive(2),
           }}
         />
+        <Button
+          {...{
+            label: "Revoked invitations",
+            active: active === 3,
+            marginX: "8px",
+            onClick: () => setActive(3),
+          }}
+        />
       </Box>
       {active === 1 ? (
-        <TableList tableHeader={tableHeader} tabList={outstandingInvitations} />
-      ) : (
+        <LazyConnect
+          actionName="revoke outstanding invitations."
+          chainId={chainId}
+          opts={{ needsAccountConnected: true }}
+        >
+          <TableList tableHeader={tableHeader} tabList={outstandingInvitations} />
+        </LazyConnect>
+      ) : active === 2 ? (
+        <TableList
+          tableHeader={p2pTableHeader}
+          tabList={outstandingInvitations.filter((invitation) =>
+            !revokedP2PInvitations.some(revokedInvitation =>
+              revokedInvitation.invitation.key === invitation.invitation.key
+            )
+          )}
+        />
+      ) : active === 3 ? (
         <TableList
           tableHeader={[tableHeader[0], tableHeader[1]]}
           tabList={revokedInvitations}
         />
+      ) : (
+        <Typography>Invalid option</Typography>
       )}
     </Box>
   );
