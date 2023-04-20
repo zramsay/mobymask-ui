@@ -1211,7 +1211,7 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/peer@^0.2.34":
+"@cerc-io/peer@^0.2.39":
   version "0.2.39"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fpeer/-/0.2.39/peer-0.2.39.tgz#2cff14a9fff85d8c77ba6d14d677250cf03d28cf"
   integrity sha512-hfgm+1IZ70EnGfJcbLXJNwiyH/kphSRNarNbFNe0swC4PMl0oH4orraHQU/wRVJhkBcJp5qqnSM6KXauVA93Ig==
@@ -1252,12 +1252,12 @@
     it-stream-types "^1.0.4"
     promjs "^0.4.2"
 
-"@cerc-io/react-peer@0.2.32":
-  version "0.2.32"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Freact-peer/-/0.2.32/react-peer-0.2.32.tgz#77ac18a78205b4091339f7ce07e7fa2065c09011"
-  integrity sha512-MUFcdn6DOrkkiBeCwtTwoIdkkq6nTr7DFOEp3i8splXv8b54ywxMUYZi9OGaOfzF2h8abcbyFtfSUXVxUdu8lw==
+"@cerc-io/react-peer@0.2.33":
+  version "0.2.33"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Freact-peer/-/0.2.33/react-peer-0.2.33.tgz#b33ab749abde5664672b9722c46002a042f0f3a3"
+  integrity sha512-72UAQrqEmvs8I/OR+KiuDjMSwpZ1VOOCYx3BMaT06VgY4ONBzzbNl+4P1qjEW6vQe/0YsrvRLUrHWqbokDjyOQ==
   dependencies:
-    "@cerc-io/peer" "^0.2.34"
+    "@cerc-io/peer" "^0.2.39"
     "@mui/lab" "^5.0.0-alpha.121"
     "@mui/material" "^5.11.3"
     convert "^4.10.0"
