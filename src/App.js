@@ -8,10 +8,11 @@ import { HashRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./App.css";
 import CheckPhisherStatus from "./views/CheckPhisherStatus";
+import CheckMemberStatus from "./views/CheckMemberStatus";
 import HeaderBox from "./views/HeaderBox";
 import InstallExtension from "./views/InstallExtension";
 import FooterBox from "./views/FooterBox";
-import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./utils/constants";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC, DISPLAY_ENDORSE_MEMBERS } from "./utils/constants";
 import { getCurrentTime } from "./utils/getCurrentTime";
 import artifacts from "./utils/artifacts.json";
 import DebugPanel from "./components/DebugPanel";
@@ -88,6 +89,7 @@ function App() {
       <Toaster />
       <HeaderBox />
       <CheckPhisherStatus />
+      {DISPLAY_ENDORSE_MEMBERS && <CheckMemberStatus />}
       <HashRouter>
         <QueryParamsRoute />
       </HashRouter>

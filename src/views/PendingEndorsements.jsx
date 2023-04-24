@@ -1,21 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Typography, Box } from "@mui/material";
 
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import Select from "@mui/material/Select";
-
 import { useAtom, useAtomValue } from "jotai";
 import {
-  pendingPhishersAtom,
-  pendingNotPhishersAtom,
-} from "../atoms/phisherAtom";
+  pendingMembersAtom,
+  pendingNotMembersAtom,
+} from "../atoms/memberAtom";
 
 import { invitationAtom } from "../atoms/invitationAtom";
 
-import { reportTypes } from "../utils/constants";
-import { phisherStatus as statusText } from "../utils/statusText";
+import { memberStatus as statusText } from "../utils/statusText";
 
 import LazyConnect from "./LazyConnect";
 import Button from "../components/Button";
@@ -23,23 +17,22 @@ import TableList from "../components/TableList";
 import SubmitBatchButton from "../components/SubmitBatchButton";
 
 import LATEST_BLOCK_GRAPHQL from "../queries/latestBlock";
-import IS_PHISHER_GRAPHQL from "../queries/isPhisher";
+import IS_MEMBER_GRAPHQL from "../queries/isMember";
 import { gql } from "@apollo/client";
 import useLazyQuery from "../hooks/useLazyQuery";
-import { checkPhisherStatus, reportHandle } from "../utils/checkPhisherStatus";
+import { checkMemberStatus, endorseHandle } from "../utils/checkMemberStatus";
 
 const config = require("../utils/config.json");
 const { chainId, address } = config;
 
-function PendingReports() {
-  const [active, setActive] = useState("ReportPhisher");
-  const [storedPhishers, setStoredPhishers] = useAtom(pendingPhishersAtom);
+function PendingEndorsements() {
+  const [active, setActive] = useState("EndorseMember");
+  const [storedMembers, setStoredMembers] = useAtom(pendingMembersAtom);
   const invitation = useAtomValue(invitationAtom);
-  const [storedNotPhishers, setStoredNotPhishers] = useAtom(
-    pendingNotPhishersAtom,
+  const [storedNotMembers, setStoredNotMembers] = useAtom(
+    pendingNotMembersAtom,
   );
   const [tabList, setTabList] = useState([]);
-  const [selectedOption, setSelectedOption] = useState("TWT");
 
   const inputRef = useRef();
 
@@ -49,26 +42,22 @@ function PendingReports() {
     fetchPolicy: "no-cache",
   });
 
-  // Check if isPhisher
-  const IS_PHISHER_GQL = gql(IS_PHISHER_GRAPHQL);
-  const isPhisher = useLazyQuery(IS_PHISHER_GQL, {
+  // Check if isMember
+  const IS_MEMBER_GQL = gql(IS_MEMBER_GRAPHQL);
+  const isMember = useLazyQuery(IS_MEMBER_GQL, {
     variables: {
       contractAddress: address,
     },
   });
 
   useEffect(() => {
-    setTabList(active === "ReportPhisher" ? storedPhishers : storedNotPhishers);
-  }, [active, storedPhishers, storedNotPhishers]);
+    setTabList(active === "EndorseMember" ? storedMembers : storedNotMembers);
+  }, [active, storedMembers, storedNotMembers]);
 
   const tableHeader = [
     {
       key: "name",
       title: "Name",
-    },
-    {
-      key: "type",
-      title: "Type",
     },
     {
       key: "status",
@@ -93,47 +82,40 @@ function PendingReports() {
   ];
 
   const removeClick = (row) => {
-    if (active === "ReportPhisher") {
-      removeStoredPhishers(row);
+    if (active === "EndorseMember") {
+      removeStoredMembers(row);
     } else {
-      removeStoredNotPhishers(row);
+      removeStoredNotMembers(row);
     }
   };
 
-  const removeStoredPhishers = (phisher) => {
-    const newStoredPhishers = storedPhishers.filter(
-      (item) => item.name !== phisher.name,
+  const removeStoredMembers = (member) => {
+    const newStoredMembers = storedMembers.filter(
+      (item) => item.name !== member.name,
     );
-    setStoredPhishers(newStoredPhishers);
+    setStoredMembers(newStoredMembers);
   };
-  const removeStoredNotPhishers = (phisher) => {
-    const newStoredNotPhishers = storedNotPhishers.filter(
-      (item) => item.name !== phisher.name,
+  const removeStoredNotMembers = (member) => {
+    const newStoredNotMembers = storedNotMembers.filter(
+      (item) => item.name !== member.name,
     );
-    setStoredNotPhishers(newStoredNotPhishers);
-  };
-
-  const handleChange = (event) => {
-    setSelectedOption(event.target.value);
+    setStoredNotMembers(newStoredNotMembers);
   };
 
   const checkInfo = async () => {
     if (!inputRef.current.value) return;
-    const result = await checkPhisherStatus(
-      selectedOption,
+    const result = await checkMemberStatus(
       inputRef.current.value,
       latestBlock,
-      isPhisher,
+      isMember,
     );
     if (result) {
-      reportHandle({
-        phisher: inputRef.current.value,
-        store: active === "ReportPhisher" ? storedPhishers : storedNotPhishers,
+      endorseHandle({
+        member: inputRef.current.value,
+        store: active === "EndorseMember" ? storedMembers : storedNotMembers,
         setStore:
-          active === "ReportPhisher" ? setStoredPhishers : setStoredNotPhishers,
-        reportTypes,
-        selectedOption,
-        checkResult: result.isPhisher.value
+          active === "EndorseMember" ? setStoredMembers : setStoredNotMembers,
+        checkResult: result.isMember.value
       });
       inputRef.current.value = "";
     } else {
@@ -155,22 +137,22 @@ function PendingReports() {
         color="#101828"
         fontWeight={600}
       >
-        Pending reports
+        Pending endorsements
       </Typography>
       <Box marginBottom={2.5}>
         <Button
           {...{
-            label: "Report Phisher",
-            active: active === "ReportPhisher",
+            label: "Endorse Member",
+            active: active === "EndorseMember",
             marginRight: "8px",
-            onClick: () => setActive("ReportPhisher"),
+            onClick: () => setActive("EndorseMember"),
           }}
         />
         <Button
           {...{
-            label: "Report not Phisher",
-            active: active === "ReportNotPhisher",
-            onClick: () => setActive("ReportNotPhisher"),
+            label: "Denounce Member",
+            active: active === "DenounceMember",
+            onClick: () => setActive("DenounceMember"),
           }}
         />
       </Box>
@@ -189,25 +171,6 @@ function PendingReports() {
           borderBottom="1px solid #E5E5E5"
           paddingY="16px"
         >
-          <FormControl>
-            <InputLabel>Type</InputLabel>
-            <Select
-              style={{
-                width: "100px",
-                height: "50px",
-                borderRadius: "100px",
-              }}
-              value={selectedOption}
-              label="Type"
-              onChange={handleChange}
-            >
-              {reportTypes.map((item) => (
-                <MenuItem key={item.value} value={item.value}>
-                  {item.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
           <Box
             display="flex"
             justifyContent="flex-start"
@@ -251,13 +214,13 @@ function PendingReports() {
             p2p
             type={active}
             subData={
-              active === "ReportPhisher" ? storedPhishers : storedNotPhishers
+              active === "EndorseMember" ? storedMembers : storedNotMembers
             }
             invitation={invitation}
             setLocalData={
-              active === "ReportPhisher"
-                ? setStoredPhishers
-                : setStoredNotPhishers
+              active === "EndorseMember"
+                ? setStoredMembers
+                : setStoredNotMembers
             }
           />
         </Box>
@@ -269,13 +232,13 @@ function PendingReports() {
           <SubmitBatchButton
             type={active}
             subData={
-              active === "ReportPhisher" ? storedPhishers : storedNotPhishers
+              active === "EndorseMember" ? storedMembers : storedNotMembers
             }
             invitation={invitation}
             setLocalData={
-              active === "ReportPhisher"
-                ? setStoredPhishers
-                : setStoredNotPhishers
+              active === "EndorseMember"
+                ? setStoredMembers
+                : setStoredNotMembers
             }
           />
         </LazyConnect>
@@ -284,4 +247,4 @@ function PendingReports() {
   );
 }
 
-export default PendingReports;
+export default PendingEndorsements;

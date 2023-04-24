@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import contractInfo from "./contractInfo";
+import { MESSAGE_KINDS, MOBYMASK_TOPIC } from "./constants";
 const { createMembership } = require("eth-delegatable-utils");
 const { abi } = require("./artifacts");
 const { address } = require("./config.json");
@@ -8,8 +9,11 @@ export default async function reportMembers({
   members,
   provider,
   invitation,
+  isMember,
   peer = null
 }) {
+  const { signedDelegations } = invitation;
+
   const membership = createMembership({
     contractInfo,
     invitation,
@@ -24,10 +28,9 @@ export default async function reportMembers({
 
   const invocations = await Promise.all(
     members.map(async (member) => {
-      const _member = member.indexOf("@") === "0" ? member.slice(1) : member;
       const desiredTx = await registry.populateTransaction.claimIfMember(
-        `TWT:${_member.toLowerCase()}`,
-        true,
+        member,
+        isMember,
       );
       const invocation = {
         transaction: {
@@ -35,10 +38,13 @@ export default async function reportMembers({
           data: desiredTx.data,
           gasLimit: 500000,
         },
+        authority: signedDelegations,
       };
       return invocation;
     }),
   );
+
+  console.dir({ invocations });
 
   const queue = Math.floor(Math.random() * 100000000);
   const signedInvocations = membership.signInvocations({

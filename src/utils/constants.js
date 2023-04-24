@@ -10,3 +10,5 @@ export const MESSAGE_KINDS = {
   INVOKE: 'invoke',
   REVOKE: 'revoke'
 };
+
+export const DISPLAY_ENDORSE_MEMBERS = true;

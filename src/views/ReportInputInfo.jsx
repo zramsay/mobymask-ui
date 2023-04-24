@@ -6,9 +6,14 @@ import {
   pendingPhishersAtom,
   pendingNotPhishersAtom,
 } from "../atoms/phisherAtom";
+import {
+  pendingMembersAtom,
+  pendingNotMembersAtom,
+} from "../atoms/memberAtom";
 import { invitationAtom } from "../atoms/invitationAtom";
 import { reportTypes } from "../utils/constants";
 import { reportHandle } from "../utils/checkPhisherStatus";
+import { endorseHandle } from "../utils/checkMemberStatus";
 import error_icon from "../assets/error_icon.png";
 import success_icon from "../assets/success_icon.png";
 
@@ -17,25 +22,40 @@ function ReportInputInfo(props) {
     isLoading,
     checkResult,
     selectedOption,
-    phisher = "",
-    clearPhisher = () => {},
+    value = "",
+    clearInput = () => {},
+    isMemberCheck = false
   } = props;
   const [storedPhishers, setStoredPhishers] = useAtom(pendingPhishersAtom);
   const [storedNotPhishers, setStoredNotPhishers] = useAtom(
     pendingNotPhishersAtom,
   );
+  const [storedMembers, setStoredMembers] = useAtom(pendingMembersAtom);
+  const [storedNotMembers, setStoredNotMembers] = useAtom(
+    pendingNotMembersAtom,
+  );
   const invitation = useAtomValue(invitationAtom);
 
   const handleReport = () => {
-    reportHandle({
-      phisher,
-      checkResult,
-      store: checkResult ? storedNotPhishers : storedPhishers,
-      setStore: checkResult ? setStoredNotPhishers : setStoredPhishers,
-      clearPhisher,
-      reportTypes,
-      selectedOption,
-    });
+    if (isMemberCheck) {
+      endorseHandle({
+        member: value,
+        checkResult,
+        store: checkResult ? storedNotMembers : storedMembers,
+        setStore: checkResult ? setStoredNotMembers : setStoredMembers,
+        clearMember: clearInput,
+      });
+    } else {
+      reportHandle({
+        phisher: value,
+        checkResult,
+        store: checkResult ? storedNotPhishers : storedPhishers,
+        setStore: checkResult ? setStoredNotPhishers : setStoredPhishers,
+        clearPhisher: clearInput,
+        reportTypes,
+        selectedOption,
+      });
+    }
   };
 
   const getIcon = () => {
@@ -51,6 +71,22 @@ function ReportInputInfo(props) {
         break;
     }
   };
+
+  const getButtonLabel = () => {
+    if (isMemberCheck) {
+      return `${checkResult ? "Denounce" : "Endorse"} Member`;
+    }
+
+    return  `Report ${checkResult ? "not" : ""} Phisher`;
+  };
+
+  const getResultColor = () => {
+    if (isMemberCheck) {
+      return checkResult ? "#61BA60" : "#FF5056";
+    }
+
+    return checkResult ? "#FF5056" : "#61BA60"
+  }
 
   return (
     <Box
@@ -91,13 +127,13 @@ function ReportInputInfo(props) {
               color="#101828"
               textAlign="left"
             >
-              {phisher + " "}
+              {value + " "}
               <Typography
                 component="span"
                 fontWeight="400"
-                color={checkResult ? "#FF5056" : "#61BA60"}
+                color={getResultColor()}
               >
-                is {!checkResult && "not"} a registered phisher.
+                is {!checkResult && "not"} a registered {isMemberCheck ? 'member' : 'phisher'}.
               </Typography>
             </Typography>
             <Typography
@@ -125,7 +161,7 @@ function ReportInputInfo(props) {
           {invitation && (
             <Button
               {...{
-                label: `Report ${checkResult ? "not" : ""} Phisher`,
+                label: getButtonLabel(),
                 active: false,
                 onClick: handleReport,
               }}

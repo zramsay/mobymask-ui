@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { PeerContext } from "@cerc-io/react-peer";
 import Button from "./Button";
-// import reportMembers from "../utils/reportMembers";
+import reportMembers from "../utils/reportMembers";
 import reportPhishers from "../utils/reportPhishers";
 import { reportTypes } from "../utils/constants";
 import { toast } from "react-hot-toast";
@@ -22,21 +22,50 @@ function SubmitBatchButton(props) {
   }
 
   const submitClick = () => {
-    phishingReport(type === "ReportPhisher");
+    switch (type) {
+      case "ReportPhisher":
+        phishingReport(true);
+        break;
+
+      case "ReportNotPhisher":
+        phishingReport(false);
+        break;
+
+      case "EndorseMember":
+        memberReport(true);
+        break;
+
+      case "DenounceMember":
+        memberReport(false);
+        break;
+
+      default:
+        break;
+    }
   };
 
-  // const memberReport = async () => {
-  //   if (!invitation) return;
+  const memberReport = async (isReportMember) => {
+    const loading = toast.loading("Waiting...");
+    if (!invitation) return;
 
-  //   reportOptions.members = subData;
+    reportOptions.members = subData.map((item) => {
+      const name = item.name.indexOf("@") === 0 ? item.name.slice(1) : item.name;
 
-  //   try {
-  //     await reportMembers(reportOptions);
-  //     setLocalData([]);
-  //   } catch (err) {
-  //     console.error(`Error: ${err.message}`);
-  //   }
-  // };
+      return `TWT:${name.toLowerCase()}`;
+    });
+
+    reportOptions.isMember = isReportMember;
+
+    try {
+      await reportMembers(reportOptions);
+      document.dispatchEvent(new Event("clear_pendingMembers"));
+      setLocalData([]);
+      toast.success(`Batch submitted to ${p2p ? 'p2p network' : 'blockchain'}!`);
+    } catch (err) {
+      toast.error(err.reason || err.error.message);
+    }
+    toast.dismiss(loading);
+  };
 
   const phishingReport = async (isReportPhisher) => {
     const loading = toast.loading("Waiting...");

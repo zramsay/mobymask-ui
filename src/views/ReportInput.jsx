@@ -6,14 +6,16 @@ import { gql } from "@apollo/client";
 import useLazyQuery from "../hooks/useLazyQuery";
 import LATEST_BLOCK_GRAPHQL from "../queries/latestBlock";
 import IS_PHISHER_GRAPHQL from "../queries/isPhisher";
+import IS_MEMBER_GRAPHQL from "../queries/isMember";
 // import createPhisherLabel from "../createPhisherLabel";
 import { checkPhisherStatus } from "../utils/checkPhisherStatus";
+import { checkMemberStatus } from "../utils/checkMemberStatus";
 import ReportInputInfo from "../views/ReportInputInfo";
 import config from "../utils/config.json";
 import search_icon from "../assets/search.png";
 const { address } = config;
 
-function ReportInput() {
+function ReportInput({ isMemberCheck = false }) {
   const [selectedOption, setSelectedOption] = useState("TWT");
   const [checkResult, setCheckResult] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,34 +40,57 @@ function ReportInput() {
     },
   });
 
+  // Check if isPhisher
+  const IS_MEMBER_GQL = gql(IS_MEMBER_GRAPHQL);
+  const isMember = useLazyQuery(IS_MEMBER_GQL, {
+    variables: {
+      contractAddress: address,
+    },
+  });
+
   async function submitFrom() {
     if (!inputRef.current.value) return;
     setIsLoading(true);
     setIsShow(true);
     try {
-      const result = await checkPhisherStatus(
-        selectedOption,
-        inputRef.current.value,
-        latestBlock,
-        isPhisher,
-      );
-      if (result) {
-        setCheckResult(result?.isPhisher?.value);
+      if (isMemberCheck) {
+        const result = await checkMemberStatus(
+          inputRef.current.value,
+          latestBlock,
+          isMember,
+        );
+        if (result) {
+          setCheckResult(result?.isMember?.value);
+        } else {
+          console.error(result);
+        }
       } else {
-        console.error(result);
+        const result = await checkPhisherStatus(
+          selectedOption,
+          inputRef.current.value,
+          latestBlock,
+          isPhisher,
+        );
+        if (result) {
+          setCheckResult(result?.isPhisher?.value);
+        } else {
+          console.error(result);
+        }
       }
+
     } catch (err) {
       toast.error(`Error: ${err.message}`);
     }
+
     setIsLoading(false);
   }
 
   const changeOptions = (item) => {
-    clearPhisher();
+    clearInput();
     setSelectedOption(item.value);
   };
 
-  const clearPhisher = () => {
+  const clearInput = () => {
     setIsShow(false);
     inputRef.current.value = "";
   };
@@ -78,25 +103,27 @@ function ReportInput() {
 
   return (
     <>
-      <Box display="flex" justifyContent="center">
-        {options.map((item) => (
-          <Box
-            margin="0 4px"
-            padding="8px 18px 6px 18px"
-            border="1px solid #D0D5DD"
-            borderColor={selectedOption === item.value ? "#101828" : "#D0D5DD"}
-            color={selectedOption === item.value ? "#fff" : "#D0D5DD"}
-            backgroundColor={selectedOption === item.value ? "#101828" : "#fff"}
-            borderRadius="10px 10px 0px 0px"
-            borderBottom="none"
-            style={{ cursor: "pointer", fontFamily: "Inter" }}
-            key={item.value}
-            onClick={() => changeOptions(item)}
-          >
-            {item?.label}
-          </Box>
-        ))}
-      </Box>
+      {!isMemberCheck && (
+        <Box display="flex" justifyContent="center">
+          {options.map((item) => (
+            <Box
+              margin="0 4px"
+              padding="8px 18px 6px 18px"
+              border="1px solid #D0D5DD"
+              borderColor={selectedOption === item.value ? "#101828" : "#D0D5DD"}
+              color={selectedOption === item.value ? "#fff" : "#D0D5DD"}
+              backgroundColor={selectedOption === item.value ? "#101828" : "#fff"}
+              borderRadius="10px 10px 0px 0px"
+              borderBottom="none"
+              style={{ cursor: "pointer", fontFamily: "Inter" }}
+              key={item.value}
+              onClick={() => changeOptions(item)}
+            >
+              {item?.label}
+            </Box>
+          ))}
+        </Box>
+      )}
       <Box
         position="relative"
         width="100%"
@@ -126,7 +153,7 @@ function ReportInput() {
           onKeyDown={keyDown}
           placeholder={`Enter a ${
             options.find((item) => item.value === selectedOption).label
-          } to check if it is a phisher...`}
+          } to check if it is a ${isMemberCheck ? 'member' : 'phisher'}...`}
         />
         <Box
           width="80px"
@@ -154,9 +181,10 @@ function ReportInput() {
           {...{
             checkResult,
             selectedOption,
-            phisher: inputRef.current.value,
-            clearPhisher,
+            value: inputRef.current.value,
+            clearInput,
             isLoading,
+            isMemberCheck
           }}
         />
       )}
