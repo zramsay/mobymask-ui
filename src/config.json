@@ -4,6 +4,7 @@
   "chainId": 1,
   "relayNodes": [],
   "peer": {
+    "denyMultiaddrs": [],
     "enableDebugInfo": true
   }
 }
