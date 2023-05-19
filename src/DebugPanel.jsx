@@ -11,7 +11,8 @@ import TabList from '@mui/lab/TabList';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import CloseIcon from '@mui/icons-material/Close';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { Metrics, SelfInfo, Connections, PeersGraph, NetworkGraph } from "@cerc-io/react-peer";
+import { PeerContext, Metrics, NetworkGraph } from "@cerc-io/react-peer";
+import { SelfInfo, Connections, PeersGraph } from "@cerc-io/react-libp2p-debug";
 
 import config from './config.json';
 import { SubscribedMessages } from "./components/SubscribedMessages";
@@ -76,6 +77,7 @@ const theme = createTheme({
 });
 
 export default function DebugPanel({ messages }) {
+  const peer = React.useContext(PeerContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [value, setValue] = React.useState('1');
   const [graphContainerHeight, setGraphContainerHeight] = React.useState((window.innerHeight / 2) - TAB_HEADER_HEIGHT)
@@ -134,14 +136,29 @@ export default function DebugPanel({ messages }) {
               </TabList>
             </Box>
             <TabPanel sx={STYLES.tabPanel} value="1">
-              <SelfInfo relayNodes={config.relayNodes ?? []} sx={STYLES.selfInfo} />
-              <Connections />
+              <SelfInfo
+                sx={STYLES.selfInfo}
+                node={peer?.node}
+                enablePrimaryRelaySupport
+                relayNodes={config.relayNodes ?? []}
+                primaryRelayMultiaddr={peer?.relayNodeMultiaddr}
+              />
+              <Connections
+                node={peer?.node}
+                enablePrimaryRelaySupport
+                primaryRelayMultiaddr={peer?.relayNodeMultiaddr}
+              />
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="2">
               <Metrics />
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="3">
-              <PeersGraph containerHeight={graphContainerHeight}/>
+              <PeersGraph
+                containerHeight={graphContainerHeight}
+                node={peer?.node}
+                enablePrimaryRelaySupport
+                primaryRelayMultiaddr={peer?.relayNodeMultiaddr}
+              />
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="4">
               <SubscribedMessages messages={messages} />

@@ -34,7 +34,7 @@ function App() {
           const txData = invocation.transaction.data;
           const decoded = contractInterface.parseTransaction({ data: txData });
 
-          messageLogs.push(`method: ${decoded.name}, value: ${decoded.args[0]}`);
+          messageLogs.push(`method: ${decoded.name}, values: [${decoded.args.join(', ')}]`);
         });
 
         break;
