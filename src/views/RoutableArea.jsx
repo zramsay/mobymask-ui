@@ -46,6 +46,7 @@ export default function RoutableArea() {
   return (
     <Routes>
       <Route path="/members" element={invitation ? <ContentBox /> : null} />
+      <Route path="/" element={null} />
     </Routes>
   );
 }

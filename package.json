@@ -8,8 +8,10 @@
   "dependencies": {
     "@apollo/client": "^3.7.2",
     "@babel/core": "^7.16.0",
-    "@cerc-io/peer": "^0.2.41",
     "@cerc-io/react-peer": "0.2.34",
+    "@cerc-io/peer": "^0.2.46",
+    "@cerc-io/nitro-client-browser": "^0.1.1",
+    "@cerc-io/nitro-util": "^0.1.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@metamask/eth-sig-util": "^5.0.2",
@@ -87,7 +89,8 @@
     "start": "node scripts/start.js",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js",
-    "prepublishOnly": "cp src/utils/config.hosted.json src/utils/config.json && npm run build"
+    "prepublishOnly": "cp src/utils/config.hosted.json src/utils/config.json && npm run build",
+    "build:fix-modules": "node scripts/fix-modules.js"
   },
   "eslintConfig": {
     "extends": [
@@ -164,6 +167,7 @@
     ]
   },
   "devDependencies": {
+    "@npmcli/package-json": "^3.1.1",
     "autoprefixer": "^10.4.13",
     "buffer": "^6.0.3",
     "react-error-overlay": "^6.0.9"

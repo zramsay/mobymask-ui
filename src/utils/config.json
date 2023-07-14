@@ -5,6 +5,8 @@
   "relayNodes": [],
   "peer": {
     "denyMultiaddrs": [],
-    "enableDebugInfo": true
+    "enableDebugInfo": true,
+    "pingInterval": 4000,
+    "pingTimeout": 1500
   }
 }

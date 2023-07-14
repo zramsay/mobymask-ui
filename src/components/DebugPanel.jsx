@@ -16,6 +16,7 @@ import { Metrics, SelfInfo, Connections, PeersGraph, NetworkGraph } from "@cerc-
 import config from '../utils/config.json';
 import { SubscribedMessages } from './SubscribedMessages';
 import { TabPanel } from './TabPanel';
+import { NitroInfo } from './NitroInfo';
 
 const RESIZE_THROTTLE_TIME = 500; // ms
 const TAB_HEADER_HEIGHT = 40;
@@ -75,7 +76,7 @@ const theme = createTheme({
   },
 });
 
-export default function DebugPanel({ messages }) {
+export default function DebugPanel({ messages, nitro }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [value, setValue] = React.useState('1');
   const [graphContainerHeight, setGraphContainerHeight] = React.useState((window.innerHeight / 2) - TAB_HEADER_HEIGHT)
@@ -131,6 +132,7 @@ export default function DebugPanel({ messages }) {
                 <Tab sx={STYLES.tab} label="Graph (Peers)" value="3" />
                 <Tab sx={STYLES.tab} label="Messages" value="4" data-ref="debug.messages" />
                 <Tab disabled={!config.peer.enableDebugInfo} sx={STYLES.tab} label="Graph (Network)" value="5" />
+                <Tab disabled={!nitro} sx={STYLES.tab} label="Nitro" value="6" />
               </TabList>
             </Box>
             <TabPanel sx={STYLES.tabPanel} value="1">
@@ -148,6 +150,9 @@ export default function DebugPanel({ messages }) {
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="5">
               <NetworkGraph containerHeight={graphContainerHeight}/>
+            </TabPanel>
+            <TabPanel sx={STYLES.tabPanel} value="6">
+              <NitroInfo nitro={nitro}/>
             </TabPanel>
           </TabContext>
         </Paper>
