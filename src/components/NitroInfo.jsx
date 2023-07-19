@@ -55,16 +55,18 @@ export function NitroInfo ({ provider, peer }) {
 
   const clientLedgerChannelMap = useMemo(() => {
     return Array.from(ledgerChannels.values()).reduce((acc, channel) => {
-      acc.set(channel.Balance.hub, channel.ID);
+      acc.set(channel.balance.hub, channel.iD);
       return acc;
     }, new Map())
   }, [ledgerChannels]);
 
-  const clientPaymentChannelMap = useMemo(() => {
+  const clientPaymentChannelsMap = useMemo(() => {
     return Array.from(paymentChannels.values()).reduce((acc, channel) => {
-      acc.set(channel.Payer, channel.ID);
+      const clientChannels = acc.get(channel.balance.payer) ?? [];
+      clientChannels.push(channel.iD);
+      acc.set(channel.balance.payee, clientChannels);
       return acc;
-    }, new Map())
+    }, new Map());
   }, [paymentChannels]);
 
   useEffect(() => {
@@ -105,15 +107,13 @@ export function NitroInfo ({ provider, peer }) {
 
   const refreshInfo = useCallback(async () => {
     const channels = await nitro.getAllLedgerChannels();
-    const channelJSONs = channels.map(channel => channel.toJSON());
     const paymentChannelsMap = new Map();
 
-    const paymentChannelPromises = channelJSONs.map(async (channelJSON) => {
-      const paymentChannels = await nitro.getPaymentChannelsByLedger(channelJSON.ID.value);
+    const paymentChannelPromises = channels.map(async (channel) => {
+      const paymentChannels = await nitro.getPaymentChannelsByLedger(channel.iD.value);
 
       paymentChannels.forEach(paymentChannel => {
-        const paymentChannelJSON = paymentChannel.toJSON();
-        paymentChannelsMap.set(paymentChannelJSON.ID, paymentChannelJSON);
+        paymentChannelsMap.set(paymentChannel.iD, paymentChannel);
       });
     });
 
@@ -122,8 +122,8 @@ export function NitroInfo ({ provider, peer }) {
     setPaymentChannels(paymentChannelsMap);
 
     // Convert array to map for easy rendering
-    const ledgerChannelsMap = channelJSONs.reduce((acc, channel) => {
-      acc.set(channel.ID, channel);
+    const ledgerChannelsMap = channels.reduce((acc, channel) => {
+      acc.set(channel.iD, channel);
       return acc;
     }, new Map());
 
@@ -141,11 +141,42 @@ export function NitroInfo ({ provider, peer }) {
     // TODO: Create popup for amount
     // Using hardcoded amount currently
     await nitro.directFund(counterpartyAddress, 1_000_000);
-  }, [nitro, knownClients]);
+
+    // TODO: Add only required ledgerChannel using nitro.getLedgerChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
 
   const handleDirectDefund = useCallback(async (ledgerChannelId) => {
     await nitro.directDefund(ledgerChannelId.value)
-  }, [nitro]);
+
+    // TODO: Update only required ledgerChannel using nitro.getLedgerChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
+
+  const handleVirtualFund = useCallback(async (counterpartyAddress) => {
+    // TODO: Create popup for amount
+    // Using hardcoded amount currently
+    await nitro.virtualFund(counterpartyAddress, 1_000);
+
+    // TODO: Add only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
+
+  const handlePay = useCallback(async (paymentChannelId) => {
+    // TODO: Create popup for amount
+    // Using hardcoded amount currently
+    await nitro.pay(paymentChannelId.value, 50);
+
+    // TODO: Update only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
+
+  const handleVirtualDefund = useCallback(async (paymentChannelId) => {
+    await nitro.virtualDefund(paymentChannelId.value)
+
+    // TODO: Update only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
 
   useEffect(() => {
     if (nitro) {
@@ -180,11 +211,11 @@ export function NitroInfo ({ provider, peer }) {
           <Table size="small">
             <TableBody>
               <TableRow>
-                <TableCell size="small"><b>Client address</b></TableCell>
+                <TableCell size="small"><b>Client Address</b></TableCell>
                 <TableCell size="small">{nitro.client.address}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell size="small"><b>Message service ID</b></TableCell>
+                <TableCell size="small"><b>Message Service iD</b></TableCell>
                 <TableCell size="small">{msgServiceId.toString()}</TableCell>
               </TableRow>
             </TableBody>
@@ -202,15 +233,16 @@ export function NitroInfo ({ provider, peer }) {
                 <TableRow>
                   <TableCell size="small"><b>Address</b></TableCell>
                   <TableCell size="small">{knownClient.address}</TableCell>
-                  <TableCell size="small" align="right"><b>Peer ID</b></TableCell>
+                  <TableCell size="small" align="right"><b>Peer iD</b></TableCell>
                   <TableCell size="small">{knownClient.id.toString()}</TableCell>
                 </TableRow>
+
                 <TableRow>
                   <TableCell size="small" colSpan={1}>
                     <Box sx={STYLES.commandButton}>
                       {Boolean(clientLedgerChannelMap.has(knownClient.address)) ? (
                         <Button
-                          disabled={ledgerChannels.get(clientLedgerChannelMap.get(knownClient.address)).Status === 'Complete'}
+                          disabled={ledgerChannels.get(clientLedgerChannelMap.get(knownClient.address)).status === 'Complete'}
                           variant="contained"
                           size="small"
                           onClick={() => handleDirectDefund(clientLedgerChannelMap.get(knownClient.address))}
@@ -233,6 +265,7 @@ export function NitroInfo ({ provider, peer }) {
                         <Button
                           variant="contained"
                           size="small"
+                          onClick={() => handleVirtualFund(knownClient.address)}
                         >
                           VIRTUAL FUND
                         </Button>
@@ -258,6 +291,51 @@ export function NitroInfo ({ provider, peer }) {
                     </Box>
                   </TableCell>
                 </TableRow>
+
+                <TableRow>
+                  <TableCell size="small" colSpan={4}>
+                    <b>Payment Channels</b>
+                  </TableCell>
+                </TableRow>
+                {clientPaymentChannelsMap.get(knownClient.address)?.map(paymentChannel => (
+                  <TableRow key={paymentChannel.value}>
+                    <TableCell size="small" colSpan={1}>
+                      <Box sx={STYLES.commandButton}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handlePay(paymentChannel)}
+                        >
+                          PAY
+                        </Button>
+                      </Box>
+                      <Box>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => handleVirtualDefund(paymentChannel)}
+                        >
+                          VIRTUAL DEFUND
+                        </Button>
+                      </Box>
+                    </TableCell>
+                    <TableCell size="small" colSpan={3}>
+                      <Box sx={STYLES.textBox}>
+                        {
+                          <Typography component='div' variant="body2" >
+                            <pre>
+                              {JSONbigNative.stringify(
+                                paymentChannels.get(paymentChannel),
+                                null,
+                                2
+                              )}
+                            </pre>
+                          </Typography>
+                        }
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
