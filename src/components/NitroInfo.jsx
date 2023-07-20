@@ -8,12 +8,13 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import ScopedCssBaseline from '@mui/material/ScopedCssBaseline';
 import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField } from '@mui/material';
-// import { utils } from "@cerc-io/nitro-client-browser";
-import { utils } from "@cerc-io/nitro-client";
+import { utils } from "@cerc-io/nitro-client-browser";
 import { JSONbigNative } from '@cerc-io/nitro-util';
 
 import contractAddresses from "../utils/nitro-addresses.json";
 import { nitroKeyAtom } from '../atoms/nitroKeyAtom';
+import { nitroAtom } from '../atoms/nitroAtom';
+import { voucherAtom } from '../atoms/voucherAtom';
 
 const STYLES = {
   selfInfoHead: {
@@ -47,7 +48,7 @@ window.out = (jsonObject) => {
 };
 
 export function NitroInfo ({ provider, peer }) {
-  const [nitro, setNitro] = useState();
+  const [nitro, setNitro] = useAtom(nitroAtom);
   const [nitroKey, setNitroKey] = useAtom(nitroKeyAtom);
   const [knownClients, setKnownClients] = useState([]);
   const [ledgerChannels, setLedgerChannels] = useState(new Map());
@@ -56,6 +57,7 @@ export function NitroInfo ({ provider, peer }) {
   const [directFundAmount, setDirectFundAmount] = useState(1_000_000_000);
   const [virtualFundAmount, setVirtualFundAmount] = useState(1_000);
   const [payAmount, setPayAmount] = useState(50);
+  const [_, setVoucher] = useAtom(voucherAtom)
 
   const clientLedgerChannelMap = useMemo(() => {
     return Array.from(ledgerChannels.values()).reduce((acc, channel) => {
@@ -163,11 +165,12 @@ export function NitroInfo ({ provider, peer }) {
   }, [nitro, refreshInfo, virtualFundAmount]);
 
   const handlePay = useCallback(async (paymentChannelId) => {
-    await nitro.pay(paymentChannelId.value, payAmount);
+    const voucher = await nitro.pay(paymentChannelId.value, payAmount);
+    setVoucher(voucher);
 
     // TODO: Update only required paymentChannel using nitro.getPaymentChannel
     await refreshInfo();
-  }, [nitro, refreshInfo, payAmount]);
+  }, [nitro, refreshInfo, payAmount, setVoucher]);
 
   const handleVirtualDefund = useCallback(async (paymentChannelId) => {
     await nitro.virtualDefund(paymentChannelId.value)
@@ -213,7 +216,7 @@ export function NitroInfo ({ provider, peer }) {
                 <TableCell size="small">{nitro.client.address}</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell size="small"><b>Message Service iD</b></TableCell>
+                <TableCell size="small"><b>Message Service ID</b></TableCell>
                 <TableCell size="small">{msgServiceId.toString()}</TableCell>
               </TableRow>
             </TableBody>
@@ -231,7 +234,7 @@ export function NitroInfo ({ provider, peer }) {
                 <TableRow>
                   <TableCell size="small"><b>Address</b></TableCell>
                   <TableCell size="small">{knownClient.address}</TableCell>
-                  <TableCell size="small" align="right"><b>Peer iD</b></TableCell>
+                  <TableCell size="small" align="right"><b>Peer ID</b></TableCell>
                   <TableCell size="small">{knownClient.id.toString()}</TableCell>
                 </TableRow>
 

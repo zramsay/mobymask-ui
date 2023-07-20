@@ -1,15 +1,19 @@
-export const checkPhisherStatus = async (type, id, latestBlock, isPhisher) => {
+export const checkPhisherStatus = async (type, id, latestBlock, isPhisher, headers) => {
   let codedName = sanitizeValue(type, id.toLowerCase());
 
   try {
     const { data: latestBlockData } = await latestBlock();
-    const { data } = await isPhisher({
-      blockHash: latestBlockData?.latestBlock?.hash,
-      key0: codedName,
-    });
+    const { data } = await isPhisher(
+      {
+        blockHash: latestBlockData?.latestBlock?.hash,
+        key0: codedName,
+      },
+      headers
+    );
     return data;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 };
 

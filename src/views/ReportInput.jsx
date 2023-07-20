@@ -1,8 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useAtom } from "jotai";
+import { Buffer } from 'buffer';
 import { Typography, Box } from "@mui/material";
 import { reportTypes as options } from "../utils/constants";
 import { toast } from "react-hot-toast";
 import { gql } from "@apollo/client";
+import { signEthereumMessage, utils } from "@cerc-io/nitro-client-browser"
+import { hex2Bytes } from "@cerc-io/nitro-util";
 import useLazyQuery from "../hooks/useLazyQuery";
 import LATEST_BLOCK_GRAPHQL from "../queries/latestBlock";
 import IS_PHISHER_GRAPHQL from "../queries/isPhisher";
@@ -13,7 +17,11 @@ import { checkMemberStatus } from "../utils/checkMemberStatus";
 import ReportInputInfo from "../views/ReportInputInfo";
 import config from "../utils/config.json";
 import search_icon from "../assets/search.png";
+import { nitroKeyAtom } from "../atoms/nitroKeyAtom";
+import { voucherAtom } from "../atoms/voucherAtom";
 const { address } = config;
+
+const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
 function ReportInput({ isMemberCheck = false }) {
   const [selectedOption, setSelectedOption] = useState("TWT");
@@ -21,43 +29,75 @@ function ReportInput({ isMemberCheck = false }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isShow, setIsShow] = useState(false);
   const inputRef = useRef();
+  const [nitroKey] = useAtom(nitroKeyAtom);
+  const [voucher] = useAtom(voucherAtom);
 
   useEffect(() => {
     inputRef.current.value = "";
   }, [selectedOption]);
 
+  const requestHeaders = useMemo(() => {
+    let hash = EMPTY_VOUCHER_HASH;
+    let signature = signEthereumMessage(Buffer.from(hash), hex2Bytes(nitroKey));
+
+    if (voucher) {
+      // TODO: Pay before request
+      hash = voucher.hash();
+      signature = voucher.signature;
+    }
+
+    const headers = {
+      Hash: hash,
+      Sig: utils.getJoinedSignature(signature)
+    }
+
+    return headers
+  }, [nitroKey, voucher])
+
   // Get latest block
   const LATEST_BLOCK_GQL = gql(LATEST_BLOCK_GRAPHQL);
   const latestBlock = useLazyQuery(LATEST_BLOCK_GQL, {
     fetchPolicy: "no-cache",
+    context: {
+      headers: requestHeaders
+    }
   });
 
   // Check if isPhisher
   const IS_PHISHER_GQL = gql(IS_PHISHER_GRAPHQL);
   const isPhisher = useLazyQuery(IS_PHISHER_GQL, {
+    fetchPolicy: "no-cache",
     variables: {
       contractAddress: address,
     },
+    context: {
+      headers: requestHeaders
+    }
   });
 
   // Check if isPhisher
   const IS_MEMBER_GQL = gql(IS_MEMBER_GRAPHQL);
   const isMember = useLazyQuery(IS_MEMBER_GQL, {
+    fetchPolicy: "no-cache",
     variables: {
       contractAddress: address,
     },
+    context: {
+      headers: requestHeaders
+    }
   });
 
   async function submitFrom() {
     if (!inputRef.current.value) return;
     setIsLoading(true);
-    setIsShow(true);
+
     try {
       if (isMemberCheck) {
         const result = await checkMemberStatus(
           inputRef.current.value,
           latestBlock,
           isMember,
+          requestHeaders
         );
         if (result) {
           setCheckResult(result?.isMember?.value);
@@ -70,6 +110,7 @@ function ReportInput({ isMemberCheck = false }) {
           inputRef.current.value,
           latestBlock,
           isPhisher,
+          requestHeaders
         );
         if (result) {
           setCheckResult(result?.isPhisher?.value);
@@ -78,8 +119,16 @@ function ReportInput({ isMemberCheck = false }) {
         }
       }
 
+      setIsShow(true);
     } catch (err) {
-      toast.error(`Error: ${err.message}`);
+      if (err.message === 'Response not successful: Received status code 402') {
+        // TODO: Fix error handling to show message from server
+        toast.error(`Error: Payment voucher not received`);
+      } else {
+        toast.error(`Error: ${err.message}`);
+      }
+
+      setIsShow(false);
     }
 
     setIsLoading(false);
