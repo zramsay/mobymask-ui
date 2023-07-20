@@ -156,7 +156,6 @@ export default function DebugPanel({ messages, nitro }) {
               <NetworkGraph containerHeight={graphContainerHeight}/>
             </TabPanel>
             <TabPanel sx={STYLES.tabPanel} value="6">
-              {/* TODO: Setup client inside component after connecting wallet? */}
               <LazyConnect
                 actionName="setup Nitro payment channels"
                 chainId={chainId}

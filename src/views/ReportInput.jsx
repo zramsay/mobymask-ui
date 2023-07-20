@@ -38,7 +38,13 @@ function ReportInput({ isMemberCheck = false }) {
 
   const requestHeaders = useMemo(() => {
     let hash = EMPTY_VOUCHER_HASH;
-    let signature = signEthereumMessage(Buffer.from(hash), hex2Bytes(nitroKey));
+    let signature = ''
+
+    if (!nitroKey) {
+      return {
+        Hash: hash
+      }
+    }
 
     if (voucher) {
       // TODO: Pay before request
