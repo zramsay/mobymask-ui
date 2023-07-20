@@ -7,7 +7,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import ScopedCssBaseline from '@mui/material/ScopedCssBaseline';
-import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableRow } from '@mui/material';
+import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField } from '@mui/material';
 // import { utils } from "@cerc-io/nitro-client-browser";
 import { utils } from "@cerc-io/nitro-client";
 import { JSONbigNative } from '@cerc-io/nitro-util';
@@ -27,7 +27,8 @@ const STYLES = {
     marginTop: 1
   },
   commandButton: {
-    marginBottom: 1/2
+    marginTop: 1,
+    marginBottom: 1.5
   },
   textBox: {
     '& pre': {
@@ -52,6 +53,9 @@ export function NitroInfo ({ provider, peer }) {
   const [ledgerChannels, setLedgerChannels] = useState(new Map());
   const [paymentChannels, setPaymentChannels] = useState(new Map());
   const [msgServiceId, setMsgServiceId] = useState('');
+  const [directFundAmount, setDirectFundAmount] = useState(1_000_000_000);
+  const [virtualFundAmount, setVirtualFundAmount] = useState(1_000);
+  const [payAmount, setPayAmount] = useState(50);
 
   const clientLedgerChannelMap = useMemo(() => {
     return Array.from(ledgerChannels.values()).reduce((acc, channel) => {
@@ -138,13 +142,11 @@ export function NitroInfo ({ provider, peer }) {
   }, [nitro]);
 
   const handleDirectFund = useCallback(async (counterpartyAddress) => {
-    // TODO: Create popup for amount
-    // Using hardcoded amount currently
-    await nitro.directFund(counterpartyAddress, 1_000_000);
+    await nitro.directFund(counterpartyAddress, directFundAmount);
 
     // TODO: Add only required ledgerChannel using nitro.getLedgerChannel
     await refreshInfo();
-  }, [nitro, refreshInfo]);
+  }, [nitro, refreshInfo, directFundAmount]);
 
   const handleDirectDefund = useCallback(async (ledgerChannelId) => {
     await nitro.directDefund(ledgerChannelId.value)
@@ -154,22 +156,18 @@ export function NitroInfo ({ provider, peer }) {
   }, [nitro, refreshInfo]);
 
   const handleVirtualFund = useCallback(async (counterpartyAddress) => {
-    // TODO: Create popup for amount
-    // Using hardcoded amount currently
-    await nitro.virtualFund(counterpartyAddress, 1_000);
+    await nitro.virtualFund(counterpartyAddress, virtualFundAmount);
 
     // TODO: Add only required paymentChannel using nitro.getPaymentChannel
     await refreshInfo();
-  }, [nitro, refreshInfo]);
+  }, [nitro, refreshInfo, virtualFundAmount]);
 
   const handlePay = useCallback(async (paymentChannelId) => {
-    // TODO: Create popup for amount
-    // Using hardcoded amount currently
-    await nitro.pay(paymentChannelId.value, 50);
+    await nitro.pay(paymentChannelId.value, payAmount);
 
     // TODO: Update only required paymentChannel using nitro.getPaymentChannel
     await refreshInfo();
-  }, [nitro, refreshInfo]);
+  }, [nitro, refreshInfo, payAmount]);
 
   const handleVirtualDefund = useCallback(async (paymentChannelId) => {
     await nitro.virtualDefund(paymentChannelId.value)
@@ -238,41 +236,58 @@ export function NitroInfo ({ provider, peer }) {
                 </TableRow>
 
                 <TableRow>
-                  <TableCell size="small" colSpan={1}>
-                    <Box sx={STYLES.commandButton}>
+                  <TableCell size="small" colSpan={2}>
+                    <Box display="flex" sx={STYLES.commandButton}>
                       {Boolean(clientLedgerChannelMap.has(knownClient.address)) ? (
                         <Button
                           disabled={ledgerChannels.get(clientLedgerChannelMap.get(knownClient.address)).status === 'Complete'}
                           variant="contained"
-                          size="small"
                           onClick={() => handleDirectDefund(clientLedgerChannelMap.get(knownClient.address))}
                         >
                           DIRECT DEFUND
                         </Button>
                       ) : (
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleDirectFund(knownClient.address)}
-                        >
-                          DIRECT FUND
-                        </Button>
+                        <>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleDirectFund(knownClient.address)}
+                          >
+                            DIRECT FUND
+                          </Button>
+                          &nbsp;
+                          <TextField
+                            size="small"
+                            label="Amount"
+                            value={directFundAmount}
+                            type="number"
+                            onChange={event => setDirectFundAmount(event.target.value)}
+                          />
+                        </>
                       )}
                     </Box>
-                    <Box>
+                    <Box display="flex">
                       {Boolean(ledgerChannels.size) && (
                         // TODO: Try creating payment channels using intermediaries
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleVirtualFund(knownClient.address)}
-                        >
-                          VIRTUAL FUND
-                        </Button>
+                        <>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleVirtualFund(knownClient.address)}
+                          >
+                            VIRTUAL FUND
+                          </Button>
+                          &nbsp;
+                          <TextField
+                            label="Amount"
+                            value={virtualFundAmount}
+                            type="number"
+                            size="small"
+                            onChange={event => setVirtualFundAmount(event.target.value)}
+                          />
+                        </>
                       )}
                     </Box>
                   </TableCell>
-                  <TableCell size="small" colSpan={3}>
+                  <TableCell size="small" colSpan={2}>
                     <Typography variant="subtitle2" color="inherit" noWrap>
                       <b>{ clientLedgerChannelMap.has(knownClient.address) && "Ledger Channel" }</b>
                     </Typography>
@@ -299,27 +314,33 @@ export function NitroInfo ({ provider, peer }) {
                 </TableRow>
                 {clientPaymentChannelsMap.get(knownClient.address)?.map(paymentChannel => (
                   <TableRow key={paymentChannel.value}>
-                    <TableCell size="small" colSpan={1}>
-                      <Box sx={STYLES.commandButton}>
+                    <TableCell size="small" colSpan={2}>
+                      <Box display="flex" sx={STYLES.commandButton}>
                         <Button
                           variant="contained"
-                          size="small"
                           onClick={() => handlePay(paymentChannel)}
                         >
                           PAY
                         </Button>
+                        &nbsp;
+                        <TextField
+                          size="small"
+                          label="Amount"
+                          value={payAmount}
+                          type="number"
+                          onChange={event => setPayAmount(event.target.value)}
+                        />
                       </Box>
                       <Box>
                         <Button
                           variant="contained"
-                          size="small"
                           onClick={() => handleVirtualDefund(paymentChannel)}
                         >
                           VIRTUAL DEFUND
                         </Button>
                       </Box>
                     </TableCell>
-                    <TableCell size="small" colSpan={3}>
+                    <TableCell size="small" colSpan={2}>
                       <Box sx={STYLES.textBox}>
                         {
                           <Typography component='div' variant="body2" >
