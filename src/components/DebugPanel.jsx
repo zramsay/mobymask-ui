@@ -158,7 +158,7 @@ export default function DebugPanel({ messages, nitro }) {
             <TabPanel sx={STYLES.tabPanel} value="6">
               {/* TODO: Setup client inside component after connecting wallet? */}
               <LazyConnect
-                actionName="Connect to a wallet for starting Nitro client"
+                actionName="setup Nitro payment channels"
                 chainId={chainId}
                 opts={{ needsAccountConnected: true }}
               >

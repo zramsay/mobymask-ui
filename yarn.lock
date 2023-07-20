@@ -1211,17 +1211,16 @@
     wherearewe "^2.0.0"
     xsalsa20 "^1.1.0"
 
-"@cerc-io/nitro-client-browser@^0.1.1":
-  version "0.1.1"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client-browser/-/0.1.1/nitro-client-browser-0.1.1.tgz#b64a46d77c1cce298d8918c3567c0074b263d609"
-  integrity sha512-OEj49I1vae9EP2P4AsnrjQIIPp7hQPwol8LwEde+G63///8pgGNroJ7B+SFCO2tEpPTnkZHWVyfoe1+YsipGmg==
+"@cerc-io/nitro-client-browser@^0.1.3":
+  version "0.1.3"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-client-browser/-/0.1.3/nitro-client-browser-0.1.3.tgz#9a687112a5ec2d7dd61a9ba685829d0f92c239e0"
+  integrity sha512-Pk9hfAOpGzW7Sy1EadrAN0j1xoFZjlwxW8cG2T895vgVWUjT+xEjkJ9DALKW3QMzF4X20oDVpOhscqPeUOASnQ==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
-    "@cerc-io/nitro-util" "^0.1.1"
+    "@cerc-io/nitro-util" "^0.1.3"
     "@cerc-io/peer" "^0.2.46"
     "@cerc-io/ts-channel" "1.0.3-ts-nitro-0.1.1"
     "@libp2p/crypto" "^1.0.4"
-    "@libp2p/mdns" "^6.0.0"
     "@libp2p/tcp" "^6.0.0"
     "@multiformats/multiaddr" "^11.1.4"
     "@statechannels/exit-format" "^0.2.0"
@@ -1235,10 +1234,10 @@
     promjs "^0.4.2"
     uint8arrays "^4.0.3"
 
-"@cerc-io/nitro-util@^0.1.1":
-  version "0.1.1"
-  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.1/nitro-util-0.1.1.tgz#54c8e7c46986a628e6b33505eecf88e2f278c2be"
-  integrity sha512-Wxlqu09kc5FtShWgoTL1ZDDZ1EsOegaEzJa06qSfQtkt9HsxkesnZnAvaQWqHZGBJU00NmSCQOcYXKeGDzKB+g==
+"@cerc-io/nitro-util@^0.1.3":
+  version "0.1.3"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fnitro-util/-/0.1.3/nitro-util-0.1.3.tgz#1c640221c3936203e8ccf492e6374b50502d60d3"
+  integrity sha512-NTg8RO/3bzGLZie3pavcJJzLeL9gI1RLxwEMVBtRzsZfniDfsu7CTasoEX+hKgyBiZstEoMtGbfpwVmM1IEQBA==
   dependencies:
     assert "^2.0.0"
     debug "^4.3.4"
@@ -1281,6 +1280,35 @@
   version "0.2.46"
   resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fpeer/-/0.2.46/peer-0.2.46.tgz#b317b35f1e302d8edc660adafbb3d59fcacc2d2a"
   integrity sha512-cd1/b+NlBNYE7H1Cec+Re6RIa1kV0PXt8Ac5oU+uOFHVkKyWqV0MwwdsswkQ4cfkdJ0dgvHmZca7Zqbeu680uA==
+  dependencies:
+    "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
+    "@cerc-io/prometheus-metrics" "1.1.4"
+    "@chainsafe/libp2p-noise" "^11.0.0"
+    "@chainsafe/libp2p-yamux" "^4.0.2"
+    "@libp2p/floodsub" "^6.0.0"
+    "@libp2p/mplex" "^7.1.1"
+    "@libp2p/peer-id-factory" "^2.0.0"
+    "@libp2p/pubsub-peer-discovery" "^8.0.0"
+    "@libp2p/websockets" "^5.0.5"
+    "@multiformats/multiaddr" "^11.1.4"
+    assert "^2.0.0"
+    buffer "^6.0.3"
+    chai "^4.3.4"
+    debug "^4.3.1"
+    it-length-prefixed "^8.0.4"
+    it-map "^2.0.0"
+    it-pipe "^2.0.5"
+    it-pushable "^3.1.2"
+    mocha "^8.4.0"
+    p-event "^5.0.1"
+    uint8arrays "^4.0.3"
+    unique-names-generator "^4.7.1"
+    yargs "^17.0.1"
+
+"@cerc-io/peer@^0.2.47":
+  version "0.2.47"
+  resolved "https://git.vdb.to/api/packages/cerc-io/npm/%40cerc-io%2Fpeer/-/0.2.47/peer-0.2.47.tgz#0f8bf34136feb2c9f89d6f7885823645bbea4a19"
+  integrity sha512-tXhxS8QRvz1dpdLwl43QRba1Z73ltIvbUF1CJc/Zq9k+mnzpMQUzdHfEcIDjDfympGsytrPAMcoKjpqpK1wETw==
   dependencies:
     "@cerc-io/libp2p" "0.42.2-laconic-0.1.3"
     "@cerc-io/prometheus-metrics" "1.1.4"
@@ -2639,22 +2667,6 @@
     interface-datastore "^8.2.0"
     multiformats "^11.0.2"
 
-"@libp2p/mdns@^6.0.0":
-  version "6.0.0"
-  resolved "https://registry.yarnpkg.com/@libp2p/mdns/-/mdns-6.0.0.tgz#dc68881a58c0ce5e4cc3490c0c9d74d1e1b88936"
-  integrity sha512-k5Gi0IrPi3roPHF71xlq9x69TxqjMNZ+JiM7hFV0kjRYmaLqYQ+dOTLJLUd5ZfnrxIe8KkapFw3zwKne4Dw4rA==
-  dependencies:
-    "@libp2p/interface-peer-discovery" "^1.0.1"
-    "@libp2p/interface-peer-id" "^2.0.0"
-    "@libp2p/interface-peer-info" "^1.0.3"
-    "@libp2p/interfaces" "^3.0.3"
-    "@libp2p/logger" "^2.0.1"
-    "@libp2p/peer-id" "^2.0.0"
-    "@multiformats/multiaddr" "^11.0.0"
-    "@types/multicast-dns" "^7.2.1"
-    multicast-dns "^7.2.0"
-    multiformats "^11.0.0"
-
 "@libp2p/mplex@^7.1.1":
   version "7.1.7"
   resolved "https://registry.yarnpkg.com/@libp2p/mplex/-/mplex-7.1.7.tgz#ee14192f5e82aa3710ae4a102875278aea0bb127"
@@ -3935,13 +3947,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/dns-packet@*":
-  version "5.2.4"
-  resolved "https://registry.yarnpkg.com/@types/dns-packet/-/dns-packet-5.2.4.tgz#0de4ee48f900a62b014ce61a3c9ab5d33dc06b0d"
-  integrity sha512-OAruArypdNxR/tzbmrtoyEuXeNTLaZCpO19BXaNC10T5ACIbvjmvhmV2RDEy2eLc3w8IjK7SY3cvUCcAW+sfoQ==
-  dependencies:
-    "@types/node" "*"
-
 "@types/eslint-scope@^3.7.3":
   version "3.7.4"
   resolved "https://registry.npmmirror.com/@types/eslint-scope/-/eslint-scope-3.7.4.tgz#37fc1223f0786c39627068a12e94d6e6fc61de16"
@@ -4052,14 +4057,6 @@
   version "3.0.1"
   resolved "https://registry.npmmirror.com/@types/mime/-/mime-3.0.1.tgz#5f8f2bca0a5863cb69bc0b0acd88c96cb1d4ae10"
   integrity sha512-Y4XFY5VJAuw0FgAqPNd6NNoV44jbq9Bz2L7Rh/J6jLTiHBSBJa9fxqQIvkIld4GsoDOcCbvzOUAbLPsSKKg+uA==
-
-"@types/multicast-dns@^7.2.1":
-  version "7.2.1"
-  resolved "https://registry.yarnpkg.com/@types/multicast-dns/-/multicast-dns-7.2.1.tgz#6527b28ce62bcdc08a38f6a329a3d23145c99d95"
-  integrity sha512-A2PmB8MRcNVEkw6wzGT5rtBHqyHOVjiRMkJH+zpJKXipSi+GGkHg6JjNFApDiYK9WefJqkVG0taln1VMl4TGfw==
-  dependencies:
-    "@types/dns-packet" "*"
-    "@types/node" "*"
 
 "@types/node@*":
   version "18.14.0"
@@ -10102,7 +10099,7 @@ ms@2.1.3, ms@^2.1.1:
   resolved "https://registry.npmmirror.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-multicast-dns@^7.2.0, multicast-dns@^7.2.5:
+multicast-dns@^7.2.5:
   version "7.2.5"
   resolved "https://registry.yarnpkg.com/multicast-dns/-/multicast-dns-7.2.5.tgz#77eb46057f4d7adbd16d9290fa7299f6fa64cced"
   integrity sha512-2eznPJP8z2BFLX50tf0LuODrpINqP1RVIm/CObbTcBRITQgmC/TjcREF1NeTBzIcR5XO/ukWo+YHOjBbFwIupg==

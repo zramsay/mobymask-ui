@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-hot-toast';
 import { useAtom } from 'jotai';
@@ -7,25 +7,34 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import ScopedCssBaseline from '@mui/material/ScopedCssBaseline';
+import { Grid, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField } from '@mui/material';
 import { utils } from "@cerc-io/nitro-client-browser";
 import { JSONbigNative } from '@cerc-io/nitro-util';
 
 import contractAddresses from "../utils/nitro-addresses.json";
 import { nitroKeyAtom } from '../atoms/nitroKeyAtom';
+import { nitroAtom } from '../atoms/nitroAtom';
+import { voucherAtom } from '../atoms/voucherAtom';
 
 const STYLES = {
-  json: {
+  selfInfoHead: {
     marginTop: 1/2,
-    height: 'calc(50vh - (8px + 32px))',
-    overflowY: 'scroll',
+    marginBottom: 1/2
+  },
+  selfInfo: {
+    marginBottom: 1
+  },
+  knownClients: {
+    marginTop: 1
+  },
+  commandButton: {
+    marginTop: 1,
+    marginBottom: 1.5
   },
   textBox: {
-    padding: 1/2,
-    border: '1px solid black',
-    marginBottom: 2,
     '& pre': {
       font: 'inherit',
-      marginY: 1/2,
+      marginY: 0,
       whiteSpace: 'pre-wrap',
       wordWrap: 'break-word'
     }
@@ -39,12 +48,32 @@ window.out = (jsonObject) => {
 };
 
 export function NitroInfo ({ provider, peer }) {
-  const [nitro, setNitro] = useState();
+  const [nitro, setNitro] = useAtom(nitroAtom);
   const [nitroKey, setNitroKey] = useAtom(nitroKeyAtom);
   const [knownClients, setKnownClients] = useState([]);
-  const [channels, setChannels] = useState([]);
+  const [ledgerChannels, setLedgerChannels] = useState(new Map());
+  const [paymentChannels, setPaymentChannels] = useState(new Map());
   const [msgServiceId, setMsgServiceId] = useState('');
-  const [ledgerChannel, setLedgerChannel] = useState();
+  const [directFundAmount, setDirectFundAmount] = useState(1_000_000_000);
+  const [virtualFundAmount, setVirtualFundAmount] = useState(1_000);
+  const [payAmount, setPayAmount] = useState(50);
+  const [_, setVoucher] = useAtom(voucherAtom)
+
+  const clientLedgerChannelMap = useMemo(() => {
+    return Array.from(ledgerChannels.values()).reduce((acc, channel) => {
+      acc.set(channel.balance.hub, channel.iD);
+      return acc;
+    }, new Map())
+  }, [ledgerChannels]);
+
+  const clientPaymentChannelsMap = useMemo(() => {
+    return Array.from(paymentChannels.values()).reduce((acc, channel) => {
+      const clientChannels = acc.get(channel.balance.payer) ?? [];
+      clientChannels.push(channel.iD);
+      acc.set(channel.balance.payee, clientChannels);
+      return acc;
+    }, new Map());
+  }, [paymentChannels]);
 
   useEffect(() => {
     if (nitroKey) {
@@ -56,7 +85,7 @@ export function NitroInfo ({ provider, peer }) {
   }, [nitroKey, setNitroKey]);
 
   useEffect(() => {
-    if (!nitroKey || !provider || !peer) {
+    if (!nitroKey || !provider || !peer || nitro) {
       return;
     }
 
@@ -80,21 +109,31 @@ export function NitroInfo ({ provider, peer }) {
     }
 
     setupClient();
-  }, [provider, nitroKey, peer]);
+  }, [provider, nitroKey, peer, nitro]);
 
-  const updateInfo = useCallback(async () => {
+  const refreshInfo = useCallback(async () => {
     const channels = await nitro.getAllLedgerChannels();
+    const paymentChannelsMap = new Map();
 
     const paymentChannelPromises = channels.map(async (channel) => {
-      const channelJSON = channel.toJSON()
-      const paymentChannels = await nitro.getPaymentChannelsByLedger(channelJSON.ID.value)
+      const paymentChannels = await nitro.getPaymentChannelsByLedger(channel.iD.value);
 
-      return {
-        ...channelJSON,
-        paymentChannels: paymentChannels.map(paymentChannel => paymentChannel.toJSON())
-      }
+      paymentChannels.forEach(paymentChannel => {
+        paymentChannelsMap.set(paymentChannel.iD, paymentChannel);
+      });
     });
 
+    setMsgServiceId(await nitro.msgService.id());
+    await Promise.all(paymentChannelPromises);
+    setPaymentChannels(paymentChannelsMap);
+
+    // Convert array to map for easy rendering
+    const ledgerChannelsMap = channels.reduce((acc, channel) => {
+      acc.set(channel.iD, channel);
+      return acc;
+    }, new Map());
+
+    setLedgerChannels(ledgerChannelsMap);
     setKnownClients([]);
 
     // TODO: Add method for getting private peers
@@ -102,94 +141,230 @@ export function NitroInfo ({ provider, peer }) {
       setKnownClients((prevClients) => [...prevClients, peerInfo]);
       return true;
     });
-
-    setMsgServiceId(await nitro.msgService.id())
-    const channelsJSON = await Promise.all(paymentChannelPromises);
-    setChannels(channelsJSON);
   }, [nitro]);
 
-  const handleDirectFund = useCallback(async () => {
-    // Temp code to get counterparty string
-    const counterpartyAddress = knownClients[0].address;
+  const handleDirectFund = useCallback(async (counterpartyAddress) => {
+    await nitro.directFund(counterpartyAddress, directFundAmount);
 
-    setLedgerChannel(await nitro.directFund(counterpartyAddress, 1_000_000));
-  }, [nitro, knownClients]);
+    // TODO: Add only required ledgerChannel using nitro.getLedgerChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo, directFundAmount]);
 
-  const handleDirectDefund = useCallback(async () => {
-    await nitro.directDefund(ledgerChannel)
-  }, [nitro, ledgerChannel]);
+  const handleDirectDefund = useCallback(async (ledgerChannelId) => {
+    await nitro.directDefund(ledgerChannelId.value)
+
+    // TODO: Update only required ledgerChannel using nitro.getLedgerChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
+
+  const handleVirtualFund = useCallback(async (counterpartyAddress) => {
+    await nitro.virtualFund(counterpartyAddress, virtualFundAmount);
+
+    // TODO: Add only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo, virtualFundAmount]);
+
+  const handlePay = useCallback(async (paymentChannelId) => {
+    const voucher = await nitro.pay(paymentChannelId.value, payAmount);
+    setVoucher(voucher);
+
+    // TODO: Update only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo, payAmount, setVoucher]);
+
+  const handleVirtualDefund = useCallback(async (paymentChannelId) => {
+    await nitro.virtualDefund(paymentChannelId.value)
+
+    // TODO: Update only required paymentChannel using nitro.getPaymentChannel
+    await refreshInfo();
+  }, [nitro, refreshInfo]);
 
   useEffect(() => {
     if (nitro) {
-      updateInfo()
+      refreshInfo()
     }
-  }, [nitro, updateInfo])
+  }, [nitro, refreshInfo])
+
+  if (!nitro) {
+    return;
+  }
 
   return (
     <ScopedCssBaseline>
-      <Button
-        variant="contained"
-        size="small"
-        onClick={updateInfo}
-      >
-        UPDATE
-      </Button>
-      &nbsp;
-      <Button
-        variant="contained"
-        size="small"
-        onClick={handleDirectFund}
-      >
-        DIRECT FUND
-      </Button>
-      &nbsp;
-      {Boolean(ledgerChannel) && (
-        <Button
-          variant="contained"
-          size="small"
-          onClick={handleDirectDefund}
-        >
-          DIRECT DEFUND
-        </Button>
-      )}
-      {nitro && (
-        <Box
-          sx={STYLES.json}
-        >
-          <Box sx={STYLES.textBox}>
-            <Typography variant="body2" >
-              Client address: {nitro.client.address}
+      <Box textAlign="left">
+        <Grid container sx={STYLES.selfInfoHead}>
+          <Grid item xs="auto">
+            <Typography variant="subtitle2" color="inherit" noWrap>
+              <b>Self Info</b>
             </Typography>
-            <Typography variant="body2" >
-              Message service ID: {msgServiceId.toString()}
-            </Typography>
-          </Box>
-          <Typography variant="body2" >
-            Known clients
-          </Typography>
-          <Box sx={STYLES.textBox}>
-            {
-              knownClients.map(knownClient => (
-                <Typography key={knownClient.id} component='div' variant="body2" >
-                  <pre>{JSONbigNative.stringify(knownClient, null, 2)}</pre>
-                </Typography>
-              ))
-            }
-          </Box>
-          <Typography variant="body2" >
-            Ledger channels
-          </Typography>
-          <Box sx={STYLES.textBox}>
-            {
-              channels.map(channel => (
-                <Typography key={channel.ID.value} component='div' variant="body2" >
-                  <pre>{JSONbigNative.stringify(channel, null, 2)}</pre>
-                </Typography>
-              ))
-            }
-          </Box>
-        </Box>
-      )}
+          </Grid>
+          <Grid item xs />
+          <Button
+            variant="contained"
+            size="small"
+            onClick={refreshInfo}
+          >
+            REFRESH
+          </Button>
+        </Grid>
+
+        <TableContainer sx={STYLES.selfInfo} component={Paper}>
+          <Table size="small">
+            <TableBody>
+              <TableRow>
+                <TableCell size="small"><b>Client Address</b></TableCell>
+                <TableCell size="small">{nitro.client.address}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell size="small"><b>Message Service ID</b></TableCell>
+                <TableCell size="small">{msgServiceId.toString()}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <Typography variant="subtitle2" color="inherit" noWrap>
+          <b>Known Clients</b>
+        </Typography>
+
+        { knownClients.map(knownClient => (
+          <TableContainer sx={STYLES.knownClients} key={knownClient.id} component={Paper}>
+            <Table size="small">
+              <TableBody>
+                <TableRow>
+                  <TableCell size="small"><b>Address</b></TableCell>
+                  <TableCell size="small">{knownClient.address}</TableCell>
+                  <TableCell size="small" align="right"><b>Peer ID</b></TableCell>
+                  <TableCell size="small">{knownClient.id.toString()}</TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell size="small" colSpan={2}>
+                    <Box display="flex" sx={STYLES.commandButton}>
+                      {Boolean(clientLedgerChannelMap.has(knownClient.address)) ? (
+                        <Button
+                          disabled={ledgerChannels.get(clientLedgerChannelMap.get(knownClient.address)).status === 'Complete'}
+                          variant="contained"
+                          onClick={() => handleDirectDefund(clientLedgerChannelMap.get(knownClient.address))}
+                        >
+                          DIRECT DEFUND
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleDirectFund(knownClient.address)}
+                          >
+                            DIRECT FUND
+                          </Button>
+                          &nbsp;
+                          <TextField
+                            size="small"
+                            label="Amount"
+                            value={directFundAmount}
+                            type="number"
+                            onChange={event => setDirectFundAmount(event.target.value)}
+                          />
+                        </>
+                      )}
+                    </Box>
+                    <Box display="flex">
+                      {Boolean(ledgerChannels.size) && (
+                        // TODO: Try creating payment channels using intermediaries
+                        <>
+                          <Button
+                            variant="contained"
+                            onClick={() => handleVirtualFund(knownClient.address)}
+                          >
+                            VIRTUAL FUND
+                          </Button>
+                          &nbsp;
+                          <TextField
+                            label="Amount"
+                            value={virtualFundAmount}
+                            type="number"
+                            size="small"
+                            onChange={event => setVirtualFundAmount(event.target.value)}
+                          />
+                        </>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell size="small" colSpan={2}>
+                    <Typography variant="subtitle2" color="inherit" noWrap>
+                      <b>{ clientLedgerChannelMap.has(knownClient.address) && "Ledger Channel" }</b>
+                    </Typography>
+                    <Box sx={STYLES.textBox}>
+                      {
+                        <Typography component='div' variant="body2" >
+                          <pre>
+                            {JSONbigNative.stringify(
+                              ledgerChannels.get(clientLedgerChannelMap.get(knownClient.address)),
+                              null,
+                              2
+                            )}
+                          </pre>
+                        </Typography>
+                      }
+                    </Box>
+                  </TableCell>
+                </TableRow>
+
+                <TableRow>
+                  <TableCell size="small" colSpan={4}>
+                    <b>Payment Channels</b>
+                  </TableCell>
+                </TableRow>
+                {clientPaymentChannelsMap.get(knownClient.address)?.map(paymentChannel => (
+                  <TableRow key={paymentChannel.value}>
+                    <TableCell size="small" colSpan={2}>
+                      <Box display="flex" sx={STYLES.commandButton}>
+                        <Button
+                          variant="contained"
+                          onClick={() => handlePay(paymentChannel)}
+                        >
+                          PAY
+                        </Button>
+                        &nbsp;
+                        <TextField
+                          size="small"
+                          label="Amount"
+                          value={payAmount}
+                          type="number"
+                          onChange={event => setPayAmount(event.target.value)}
+                        />
+                      </Box>
+                      <Box>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleVirtualDefund(paymentChannel)}
+                        >
+                          VIRTUAL DEFUND
+                        </Button>
+                      </Box>
+                    </TableCell>
+                    <TableCell size="small" colSpan={2}>
+                      <Box sx={STYLES.textBox}>
+                        {
+                          <Typography component='div' variant="body2" >
+                            <pre>
+                              {JSONbigNative.stringify(
+                                paymentChannels.get(paymentChannel),
+                                null,
+                                2
+                              )}
+                            </pre>
+                          </Typography>
+                        }
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ))}
+      </Box>
     </ScopedCssBaseline>
   )
 }

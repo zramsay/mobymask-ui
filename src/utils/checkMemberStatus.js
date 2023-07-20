@@ -1,15 +1,19 @@
-export const checkMemberStatus = async (id, latestBlock, isMember) => {
+export const checkMemberStatus = async (id, latestBlock, isMember, headers) => {
   let codedName = sanitizeValue(id.toLowerCase());
 
   try {
     const { data: latestBlockData } = await latestBlock();
-    const { data } = await isMember({
-      blockHash: latestBlockData?.latestBlock?.hash,
-      key0: codedName,
-    });
+    const { data } = await isMember(
+      {
+        blockHash: latestBlockData?.latestBlock?.hash,
+        key0: codedName,
+      },
+      headers
+    );
     return data;
   } catch (err) {
     console.error(err);
+    throw err;
   }
 };
 
