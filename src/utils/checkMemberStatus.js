@@ -2,7 +2,7 @@ export const checkMemberStatus = async (id, latestBlock, isMember, headers) => {
   let codedName = sanitizeValue(id.toLowerCase());
 
   try {
-    const { data: latestBlockData } = await latestBlock();
+    const { data: latestBlockData } = await latestBlock({}, headers);
     const { data } = await isMember(
       {
         blockHash: latestBlockData?.latestBlock?.hash,

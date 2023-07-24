@@ -10,19 +10,23 @@ import { useApolloClient } from "@apollo/client";
 export default function useLazyQuery(query, options) {
   const client = useApolloClient();
   return React.useCallback(
-    // TODO: Debug headers not passed in network request
-    (variables, headers) => client.query({
-      ...options,
-      query: query,
-      variables: {
-        ...options?.variables,
-        ...variables,
-      },
-      context: {
-        ...options?.context,
-        ...headers
-      }
-    }),
+    (variables, headers) => {
+      return client.query({
+        ...options,
+        query: query,
+        variables: {
+          ...options?.variables,
+          ...variables,
+        },
+        context: {
+          ...options?.context,
+          headers: {
+            ...options?.context?.headers,
+            ...headers
+          }
+        }
+      })
+    },
     [client, query, options],
   );
 }

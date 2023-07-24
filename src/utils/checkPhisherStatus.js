@@ -2,7 +2,7 @@ export const checkPhisherStatus = async (type, id, latestBlock, isPhisher, heade
   let codedName = sanitizeValue(type, id.toLowerCase());
 
   try {
-    const { data: latestBlockData } = await latestBlock();
+    const { data: latestBlockData } = await latestBlock({}, headers);
     const { data } = await isPhisher(
       {
         blockHash: latestBlockData?.latestBlock?.hash,

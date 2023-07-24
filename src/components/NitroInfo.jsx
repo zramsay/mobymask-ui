@@ -14,7 +14,8 @@ import { JSONbigNative } from '@cerc-io/nitro-util';
 import contractAddresses from "../utils/nitro-addresses.json";
 import { nitroKeyAtom } from '../atoms/nitroKeyAtom';
 import { nitroAtom } from '../atoms/nitroAtom';
-import { voucherAtom } from '../atoms/voucherAtom';
+import { payAmountAtom } from '../atoms/payAmountAtom';
+import { watcherPaymentChannelIdAtom } from '../atoms/watcherPaymentChannelIdAtom';
 
 const STYLES = {
   selfInfoHead: {
@@ -56,8 +57,8 @@ export function NitroInfo ({ provider, peer }) {
   const [msgServiceId, setMsgServiceId] = useState('');
   const [directFundAmount, setDirectFundAmount] = useState(1_000_000_000);
   const [virtualFundAmount, setVirtualFundAmount] = useState(1_000);
-  const [payAmount, setPayAmount] = useState(50);
-  const [_, setVoucher] = useAtom(voucherAtom)
+  const [payAmount, setPayAmount] = useAtom(payAmountAtom);
+  const [, setWatcherPaymentChannelId] = useAtom(watcherPaymentChannelIdAtom)
 
   const clientLedgerChannelMap = useMemo(() => {
     return Array.from(ledgerChannels.values()).reduce((acc, channel) => {
@@ -74,6 +75,23 @@ export function NitroInfo ({ provider, peer }) {
       return acc;
     }, new Map());
   }, [paymentChannels]);
+
+  // Set watcher client payment channel
+  useEffect(() => {
+    const watcherClient = knownClients.find(knownClient => knownClient.address === process.env.REACT_APP_PAY_TO_NITRO_ADDRESS);
+
+    if (!watcherClient) {
+      return;
+    }
+
+    const paymentChannels = clientPaymentChannelsMap.get(watcherClient.address)
+
+    if (!paymentChannels || !paymentChannels.length) {
+      return;
+    }
+
+    setWatcherPaymentChannelId(paymentChannels[0].value)
+  }, [knownClients, clientPaymentChannelsMap, setWatcherPaymentChannelId])
 
   useEffect(() => {
     if (nitroKey) {
@@ -109,7 +127,7 @@ export function NitroInfo ({ provider, peer }) {
     }
 
     setupClient();
-  }, [provider, nitroKey, peer, nitro]);
+  }, [provider, nitroKey, peer, nitro, setNitro]);
 
   const refreshInfo = useCallback(async () => {
     const channels = await nitro.getAllLedgerChannels();
@@ -165,12 +183,11 @@ export function NitroInfo ({ provider, peer }) {
   }, [nitro, refreshInfo, virtualFundAmount]);
 
   const handlePay = useCallback(async (paymentChannelId) => {
-    const voucher = await nitro.pay(paymentChannelId.value, payAmount);
-    setVoucher(voucher);
+    await nitro.pay(paymentChannelId.value, payAmount);
 
     // TODO: Update only required paymentChannel using nitro.getPaymentChannel
     await refreshInfo();
-  }, [nitro, refreshInfo, payAmount, setVoucher]);
+  }, [nitro, refreshInfo, payAmount]);
 
   const handleVirtualDefund = useCallback(async (paymentChannelId) => {
     await nitro.virtualDefund(paymentChannelId.value)
