@@ -71,7 +71,9 @@ export default function LazyConnect(props) {
     needsAccountConnected && (!accounts || accounts.length === 0);
   const requiresAction = needsToSwitchChain || needsToConnectAccount;
 
-  if (!MetaMaskOnboarding.isMetaMaskInstalled()) {
+
+  //if (!MetaMaskOnboarding.isMetaMaskInstalled()) {
+    if (false) {
     return (
       <Box textAlign="center">
         <Button
