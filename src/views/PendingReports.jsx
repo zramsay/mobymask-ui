@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Typography, Box } from "@mui/material";
+import { useAtom, useAtomValue } from "jotai";
+import { toast } from "react-hot-toast";
 
+import { Typography, Box } from "@mui/material";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 
-import { useAtom, useAtomValue } from "jotai";
 import {
   pendingPhishersAtom,
   pendingNotPhishersAtom,
@@ -27,6 +28,7 @@ import IS_PHISHER_GRAPHQL from "../queries/isPhisher";
 import { gql } from "@apollo/client";
 import useLazyQuery from "../hooks/useLazyQuery";
 import { checkPhisherStatus, reportHandle } from "../utils/checkPhisherStatus";
+import usePaymentGenerator from "../hooks/usePaymentGenerator";
 
 const config = require("../utils/config.json");
 const { chainId, address } = config;
@@ -117,27 +119,38 @@ function PendingReports() {
     setSelectedOption(event.target.value);
   };
 
+  const paymentGenerator = usePaymentGenerator();
+
   const checkInfo = async () => {
     if (!inputRef.current.value) return;
-    const result = await checkPhisherStatus(
-      selectedOption,
-      inputRef.current.value,
-      latestBlock,
-      isPhisher,
-    );
-    if (result) {
-      reportHandle({
-        phisher: inputRef.current.value,
-        store: active === "ReportPhisher" ? storedPhishers : storedNotPhishers,
-        setStore:
-          active === "ReportPhisher" ? setStoredPhishers : setStoredNotPhishers,
-        reportTypes,
+
+    try {
+      const signedVoucher = await paymentGenerator()
+
+      const result = await checkPhisherStatus(
         selectedOption,
-        checkResult: result.isPhisher.value
-      });
-      inputRef.current.value = "";
-    } else {
-      console.error(result);
+        inputRef.current.value,
+        latestBlock,
+        isPhisher,
+        signedVoucher
+      );
+      if (result) {
+        reportHandle({
+          phisher: inputRef.current.value,
+          store: active === "ReportPhisher" ? storedPhishers : storedNotPhishers,
+          setStore:
+            active === "ReportPhisher" ? setStoredPhishers : setStoredNotPhishers,
+          reportTypes,
+          selectedOption,
+          checkResult: result.isPhisher.value
+        });
+        inputRef.current.value = "";
+      } else {
+        console.error(result);
+        throw new Error(result)
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`);
     }
   };
 
@@ -179,7 +192,9 @@ function PendingReports() {
         border="1px solid #D0D5DD"
         borderRadius="10px"
         padding={4}
-        overflowX="scroll"
+        sx={{
+          overflowX :"scroll"
+        }}
       >
         <TableList {...{ tableHeader, tabList }} />
         <Box

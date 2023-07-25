@@ -10,6 +10,7 @@ export default async function reportMembers({
   provider,
   invitation,
   isMember,
+  paymentGenerator,
   peer = null
 }) {
   const { signedDelegations } = invitation;
@@ -56,12 +57,17 @@ export default async function reportMembers({
   });
 
   if (peer) {
+    const payment = await paymentGenerator()
+
     // Broadcast invocations on the network
     return peer.floodMessage(
       MOBYMASK_TOPIC,
       {
-        kind: MESSAGE_KINDS.INVOKE,
-        message: [signedInvocations]
+        payment,
+        payload: {
+          kind: MESSAGE_KINDS.INVOKE,
+          message: [signedInvocations]
+        }
       }
     );
   }

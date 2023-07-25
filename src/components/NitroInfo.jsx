@@ -50,7 +50,7 @@ window.out = (jsonObject) => {
 
 export function NitroInfo ({ provider, peer }) {
   const [nitro, setNitro] = useAtom(nitroAtom);
-  const [nitroKey, setNitroKey] = useAtom(nitroKeyAtom);
+  const [nitroKey] = useAtom(nitroKeyAtom);
   const [knownClients, setKnownClients] = useState([]);
   const [ledgerChannels, setLedgerChannels] = useState(new Map());
   const [paymentChannels, setPaymentChannels] = useState(new Map());
@@ -92,15 +92,6 @@ export function NitroInfo ({ provider, peer }) {
 
     setWatcherPaymentChannelId(paymentChannels[0].value)
   }, [knownClients, clientPaymentChannelsMap, setWatcherPaymentChannelId])
-
-  useEffect(() => {
-    if (nitroKey) {
-      return;
-    }
-
-    const wallet = ethers.Wallet.createRandom()
-    setNitroKey(wallet.privateKey);
-  }, [nitroKey, setNitroKey]);
 
   useEffect(() => {
     if (!nitroKey || !provider || !peer || nitro) {

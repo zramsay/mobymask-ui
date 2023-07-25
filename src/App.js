@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { ethers } from "ethers";
+import { useAtom } from "jotai";
 
 import { PeerContext } from "@cerc-io/react-peer";
 import { getPseudonymForPeerId } from "@cerc-io/peer";
@@ -18,12 +19,23 @@ import { MESSAGE_KINDS, MOBYMASK_TOPIC, DISPLAY_ENDORSE_MEMBERS } from "./utils/
 import { getCurrentTime } from "./utils/getCurrentTime";
 import artifacts from "./utils/artifacts.json";
 import DebugPanel from "./components/DebugPanel";
+import { nitroKeyAtom } from "./atoms/nitroKeyAtom";
 
 const contractInterface = new ethers.utils.Interface(artifacts.abi);
 
 function App() {
   const peer = useContext(PeerContext);
   const [messages, setMessages] = useState([]);
+  const [nitroKey, setNitroKey] = useAtom(nitroKeyAtom);
+
+  useEffect(() => {
+    if (nitroKey) {
+      return;
+    }
+
+    const wallet = ethers.Wallet.createRandom()
+    setNitroKey(wallet.privateKey);
+  }, [nitroKey, setNitroKey]);
 
   const handleTopicMessage = useCallback((peerId, data) => {
     const { kind, message } = data;

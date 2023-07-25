@@ -1,7 +1,13 @@
-export const checkMemberStatus = async (id, latestBlock, isMember, headers) => {
+import { getPaymentHeader } from "./getPaymentHeaders";
+
+export const checkMemberStatus = async (id, latestBlock, isMember, signedVoucher) => {
   let codedName = sanitizeValue(id.toLowerCase());
 
   try {
+    const headers = {
+      'X-Payment': getPaymentHeader(signedVoucher)
+    }
+
     const { data: latestBlockData } = await latestBlock({}, headers);
     const { data } = await isMember(
       {

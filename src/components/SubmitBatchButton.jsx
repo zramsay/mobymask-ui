@@ -1,17 +1,22 @@
 import { useContext } from "react";
+import { toast } from "react-hot-toast";
+
 import { PeerContext } from "@cerc-io/react-peer";
+
 import Button from "./Button";
 import reportMembers from "../utils/reportMembers";
 import reportPhishers from "../utils/reportPhishers";
 import { reportTypes } from "../utils/constants";
-import { toast } from "react-hot-toast";
+import usePaymentGenerator from "../hooks/usePaymentGenerator";
+
 const { ethers } = require("ethers");
 function SubmitBatchButton(props) {
   const { type, provider, subData, invitation = false, setLocalData, p2p = false } = props;
   const peer = useContext(PeerContext);
 
   const reportOptions = {
-    invitation
+    invitation,
+    paymentGenerator: usePaymentGenerator()
   };
 
   if (p2p) {
@@ -62,7 +67,7 @@ function SubmitBatchButton(props) {
       setLocalData([]);
       toast.success(`Batch submitted to ${p2p ? 'p2p network' : 'blockchain'}!`);
     } catch (err) {
-      toast.error(err.reason || err.error.message);
+      toast.error(err.reason || err.error?.message || err.message);
     }
     toast.dismiss(loading);
   };
@@ -85,7 +90,7 @@ function SubmitBatchButton(props) {
       setLocalData([]);
       toast.success(`Batch submitted to ${p2p ? 'p2p network' : 'blockchain'}!`);
     } catch (err) {
-      toast.error(err.reason || err.error.message);
+      toast.error(err.reason || err.error?.message || err.message);
     }
     toast.dismiss(loading);
   };

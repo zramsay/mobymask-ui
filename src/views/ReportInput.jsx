@@ -1,12 +1,9 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAtom } from "jotai";
-import { Buffer } from 'buffer';
-import { Typography, Box } from "@mui/material";
-import { reportTypes as options } from "../utils/constants";
 import { toast } from "react-hot-toast";
+import { Typography, Box } from "@mui/material";
 import { gql } from "@apollo/client";
-import { signEthereumMessage, utils } from "@cerc-io/nitro-client-browser"
-import { hex2Bytes } from "@cerc-io/nitro-util";
+import { reportTypes as options } from "../utils/constants";
 import useLazyQuery from "../hooks/useLazyQuery";
 import LATEST_BLOCK_GRAPHQL from "../queries/latestBlock";
 import IS_PHISHER_GRAPHQL from "../queries/isPhisher";
@@ -17,13 +14,10 @@ import { checkMemberStatus } from "../utils/checkMemberStatus";
 import ReportInputInfo from "../views/ReportInputInfo";
 import config from "../utils/config.json";
 import search_icon from "../assets/search.png";
-import { nitroKeyAtom } from "../atoms/nitroKeyAtom";
-import { nitroAtom } from "../atoms/nitroAtom";
+import useSignedEmptyVoucher from "../hooks/useSignedEmptyVoucher";
+import usePaymentGenerator from "../hooks/usePaymentGenerator";
 import { watcherPaymentChannelIdAtom } from "../atoms/watcherPaymentChannelIdAtom";
-import { payAmountAtom } from "../atoms/payAmountAtom";
 const { address } = config;
-
-const EMPTY_VOUCHER_HASH = '0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470'; // keccak256('0x')
 
 window.PAY_FOR_GQL_REQUESTS = true;
 
@@ -33,10 +27,7 @@ function ReportInput({ isMemberCheck = false }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isShow, setIsShow] = useState(false);
   const inputRef = useRef();
-  const [nitroKey] = useAtom(nitroKeyAtom);
-  const [nitro] = useAtom(nitroAtom);
-  const [watcherPaymentChannelId] = useAtom(watcherPaymentChannelIdAtom);
-  const [payAmount] = useAtom(payAmountAtom);
+  const [watcherPaymentChannelId] = useAtom(watcherPaymentChannelIdAtom)
 
   useEffect(() => {
     inputRef.current.value = "";
@@ -66,27 +57,16 @@ function ReportInput({ isMemberCheck = false }) {
     }
   });
 
-  const emptyVoucherHashSignature = useMemo(() => {
-    return signEthereumMessage(Buffer.from(EMPTY_VOUCHER_HASH), hex2Bytes(nitroKey));
-  }, [nitroKey])
+  let signedVoucher = useSignedEmptyVoucher();
+  const paymentGenerator = usePaymentGenerator();
 
   async function submitFrom() {
     if (!inputRef.current.value) return;
     setIsLoading(true);
 
     try {
-      let hash = EMPTY_VOUCHER_HASH;
-      let signature = emptyVoucherHashSignature;
-
-      if (window.PAY_FOR_GQL_REQUESTS && nitro && watcherPaymentChannelId) {
-        const voucher = await nitro.pay(watcherPaymentChannelId, payAmount);
-        hash = voucher.hash();
-        signature = voucher.signature;
-      }
-
-      const requestHeaders = {
-        Hash: hash,
-        Sig: utils.getJoinedSignature(signature)
+      if (window.PAY_FOR_GQL_REQUESTS && watcherPaymentChannelId) {
+        signedVoucher = await paymentGenerator();
       }
 
       if (isMemberCheck) {
@@ -94,7 +74,7 @@ function ReportInput({ isMemberCheck = false }) {
           inputRef.current.value,
           latestBlock,
           isMember,
-          requestHeaders
+          signedVoucher
         );
         if (result) {
           setCheckResult(result?.isMember?.value);
@@ -107,7 +87,7 @@ function ReportInput({ isMemberCheck = false }) {
           inputRef.current.value,
           latestBlock,
           isPhisher,
-          requestHeaders
+          signedVoucher
         );
         if (result) {
           setCheckResult(result?.isPhisher?.value);

@@ -19,6 +19,7 @@ import { invitationAtom } from "../atoms/invitationAtom";
 import { providerAtom } from "../atoms/providerAtom";
 import Button from "../components/Button";
 import TableList from "../components/TableList";
+import usePaymentGenerator from "../hooks/usePaymentGenerator";
 
 const {
   generateUtil,
@@ -113,6 +114,8 @@ function MyInvitations() {
       .catch(console.error);
   }, [registry, provider]);
 
+  const paymentGenerator = usePaymentGenerator();
+
   const revokeLink = async (row, index, p2p) => {
     const loading = toast.loading("Waiting...");
     try {
@@ -135,12 +138,18 @@ function MyInvitations() {
         // Convert delegationHash from buffer to hex string before broadcasting as JSON on p2p network
         signedIntendedRevocation.intentionToRevoke.delegationHash = ethers.utils.hexlify(signedIntendedRevocation.intentionToRevoke.delegationHash)
 
+        // Pay watcher Nitro client before broadcasting message
+        const payment = await paymentGenerator()
+
         // Broadcast revocation on the network
         await peer.floodMessage(
           MOBYMASK_TOPIC,
           {
-            kind: MESSAGE_KINDS.REVOKE,
-            message: { signedDelegation, signedIntendedRevocation }
+            payment,
+            payload: {
+              kind: MESSAGE_KINDS.REVOKE,
+              message: { signedDelegation, signedIntendedRevocation }
+            }
           }
         );
 
@@ -158,7 +167,7 @@ function MyInvitations() {
       toast.success("Revoke success!");
     } catch (err) {
       console.error(err);
-      toast.error(err.reason || err.error.message);
+      toast.error(err.reason || err.error?.message || err.message);
     }
     toast.dismiss(loading);
   };

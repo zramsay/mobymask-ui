@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { useAtom, useAtomValue } from "jotai";
+import { toast } from "react-hot-toast";
+
 import { Typography, Box } from "@mui/material";
 
-import { useAtom, useAtomValue } from "jotai";
 import {
   pendingMembersAtom,
   pendingNotMembersAtom,
@@ -21,6 +23,7 @@ import IS_MEMBER_GRAPHQL from "../queries/isMember";
 import { gql } from "@apollo/client";
 import useLazyQuery from "../hooks/useLazyQuery";
 import { checkMemberStatus, endorseHandle } from "../utils/checkMemberStatus";
+import usePaymentGenerator from "../hooks/usePaymentGenerator";
 
 const config = require("../utils/config.json");
 const { chainId, address } = config;
@@ -102,24 +105,35 @@ function PendingEndorsements() {
     setStoredNotMembers(newStoredNotMembers);
   };
 
+  const paymentGenerator = usePaymentGenerator();
+
   const checkInfo = async () => {
     if (!inputRef.current.value) return;
-    const result = await checkMemberStatus(
-      inputRef.current.value,
-      latestBlock,
-      isMember,
-    );
-    if (result) {
-      endorseHandle({
-        member: inputRef.current.value,
-        store: active === "EndorseMember" ? storedMembers : storedNotMembers,
-        setStore:
-          active === "EndorseMember" ? setStoredMembers : setStoredNotMembers,
-        checkResult: result.isMember.value
-      });
-      inputRef.current.value = "";
-    } else {
-      console.error(result);
+
+    try {
+      const signedVoucher = await paymentGenerator();
+
+      const result = await checkMemberStatus(
+        inputRef.current.value,
+        latestBlock,
+        isMember,
+        signedVoucher
+      );
+      if (result) {
+        endorseHandle({
+          member: inputRef.current.value,
+          store: active === "EndorseMember" ? storedMembers : storedNotMembers,
+          setStore:
+            active === "EndorseMember" ? setStoredMembers : setStoredNotMembers,
+          checkResult: result.isMember.value
+        });
+        inputRef.current.value = "";
+      } else {
+        console.error(result);
+        throw new Error(result)
+      }
+    } catch (err) {
+      toast.error(`Error: ${err.message}`);
     }
   };
 
@@ -161,7 +175,9 @@ function PendingEndorsements() {
         border="1px solid #D0D5DD"
         borderRadius="10px"
         padding={4}
-        overflowX="scroll"
+        sx={{
+          overflowX :"scroll"
+        }}
       >
         <TableList {...{ tableHeader, tabList }} />
         <Box
