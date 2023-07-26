@@ -93,7 +93,7 @@ function App() {
       <HashRouter>
         <QueryParamsRoute />
       </HashRouter>
-      //<InstallExtension />
+	  {/* <InstallExtension /> */}
       <FooterBox />
       <DebugPanel messages={messages} />
     </div>

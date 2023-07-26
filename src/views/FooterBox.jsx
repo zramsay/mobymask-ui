@@ -54,13 +54,13 @@ function FooterBox() {
                 fontWeight="600"
                 target="_blank"
                 style={{ textDecoration: "none" }}
-                href="https://github.com/danfinlay/MobyMask/"
+                href="https://github.com/delegatable/MobyMask"
               >
                 Fork on GitHub
               </Typography>
             </Box>
             <Typography marginTop={{ xs: 2, md: 5.5 }} color="#666F85">
-              @2022 MobyMask • MetaMask Ecosystem
+              @2023 MobyMask • MetaMask Ecosystem
             </Typography>
           </Box>
           <Box marginTop={{ xs: 3.5, md: 7.5 }} flex="1">
