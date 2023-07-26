@@ -151,9 +151,10 @@ function ReportInput({ isMemberCheck = false }) {
           }}
           ref={inputRef}
           onKeyDown={keyDown}
+	  // currently only Twitter
           placeholder={`Enter a ${
             options.find((item) => item.value === selectedOption).label
-          } to check if it is a ${isMemberCheck ? 'member' : 'phisher'}...`}
+          } username to check if it is a reported ${isMemberCheck ? 'member' : 'phisher'} on the MobyMask network.`}
         />
         <Box
           width="80px"
